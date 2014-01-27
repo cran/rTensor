@@ -1,0 +1,26 @@
+\docType{methods}
+\name{innerProd-methods}
+\alias{innerProd}
+\alias{innerProd,Tensor,Tensor-method}
+\alias{innerProd-methods}
+\title{Tensors Inner Product}
+\arguments{
+  \item{tnsr1}{first Tensor instance}
+
+  \item{tnsr2}{second Tensor instance}
+}
+\value{
+  inner product between \code{x1} and \code{x2}
+}
+\description{
+  Returns the inner product between two Tensors
+}
+\details{
+  \code{innerProd(tnsr1,tnsr2)}
+}
+\examples{
+tnsr1 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr2 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+innerProd(tnsr1,tnsr2)
+}
+
