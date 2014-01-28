@@ -1,0 +1,58 @@
+\name{pvd}
+\alias{pvd}
+\title{Population Value Decomposition}
+\usage{
+  pvd(tnsr, uranks = NULL, wranks = NULL, a = NULL,
+    b = NULL)
+}
+\arguments{
+  \item{tnsr}{3-Tensor with the third mode being the
+  measurement mode}
+
+  \item{uranks}{ranks of the U matrices}
+
+  \item{wranks}{ranks of the W matrices}
+
+  \item{a}{rank of \code{P = U\%*\%t(U)}}
+
+  \item{b}{rank of \code{D = W\%*\%t(W)}}
+}
+\value{
+  a list containing the following:\describe{
+  \item{\code{P}}{population-level matrix \code{P =
+  U\%*\%t(U)}, where U is constructed by stacking the
+  truncated left eigenvectors of slicewise PCA along the
+  third mode} \item{\code{V}}{a list of image-level core
+  matrices} \item{\code{D}}{population-leve matrix \code{D
+  = W\%*\%t(W)}, where W is constructed by stacking the
+  truncated right eigenvectors of slicewise PCA along the
+  third mode} }
+}
+\description{
+  The default Population Value Decomposition (PVD) of a
+  series of 2D images. Constructs population-level matrices
+  P, V, and D to account for variances within as well as
+  across the images. Structurally similar to Tucker
+  (\code{\link{tucker}}) and GLRAM (\code{\link{mpca}}),
+  but retains crucial differences. Requires \code{2N_3 + 2}
+  parameters to specified the final ranks of P, V, and D,
+  where N_3 Consult Crainiceanu et al. The third mode is
+  for how many images are in the set. (2013) for the
+  construction and rationale behind the PVD model.
+}
+\details{
+  The PVD is not an iterative method, but instead relies on
+  \code{N_3 + 2}separate PCA decompositions. The third mode
+  is for how many images are in the set.
+}
+\examples{
+tnsr <- new("Tensor",3L,c(100L,10L,10L),data=runif(1000))
+pvdD<-pvd(tnsr,uranks=rep(8,100),wranks=rep(4,100),a=8,b=4)
+}
+\references{
+  C. Crainiceanu, B. Caffo, S. Luo, V. Zipunnikov, N.
+  Punjabi, "Population value decomposition: a framework for
+  the analysis of image populations". Journal of the
+  American Statistical Association, 2013.
+}
+

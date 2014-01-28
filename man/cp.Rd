@@ -1,0 +1,70 @@
+\name{cp}
+\alias{cp}
+\title{Canonical Polyadic Decomposition}
+\usage{
+  cp(tnsr, num_components = NULL, max_iter = 25,
+    tol = 1e-05)
+}
+\arguments{
+  \item{tnsr}{Tensor with K modes}
+
+  \item{num_components}{the number of rank-1 K-Tensors to
+  use in approximation}
+
+  \item{max_iter}{maximum number of iterations if error
+  stays above \code{tol}}
+
+  \item{tol}{relative Frobenius norm error tolerance}
+}
+\value{
+  a list containing the following \describe{
+  \item{\code{lambdas}}{a vector of normalizing constants,
+  one for each component} \item{\code{U}}{a list of
+  matrices - one for each mode - each matrix with
+  \code{num_components} columns} \item{\code{conv}}{whether
+  or not \code{resid} < \code{tol} by the last iteration}
+  \item{\code{norm_percent}}{the percent of Frobenius norm
+  explained by the approximation} \item{\code{resid}}{the
+  relative error in Frobenius norm.} }
+}
+\description{
+  Canonical Polyadic (CP) decomposition of a tensor, aka
+  CANDECOMP/PARAFRAC. Approximate a K-Tensor using a sum of
+  \code{num_components} rank-1 K-Tensors. A rank-1 K-Tensor
+  can be written as an outer product of K vectors. There
+  are a total of \code{num_compoents * getNumModes(tnsr)}
+  vectors in the output, stored in \code{getNumModes(tnsr)}
+  matrices, each with \code{num_components} columns. This
+  is an iterative algorithm, with two possible stopping
+  conditions: either relative error in Frobenius norm has
+  gotten below \code{tol}, or the \code{max_iter} number of
+  iterations has been reached. For more details on CP
+  decomposition, consult Kolda and Bader (2009).
+}
+\details{
+  Uses the Alternating Least Squares (ALS) estimation
+  procedure. A progress bar is included to help monitor
+  operations on large tensors.
+}
+\examples{
+tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+cpD <- cp(tnsr,num_components=5)
+cpD$conv
+cpD$norm_percent
+plot(cpD$resid)
+#####
+smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
+smallcpD <- cp(smalltnsr,num_components=5)
+smallcpD$conv
+smallcpD$norm_percent
+plot(smallcpD$resid)
+}
+\references{
+  T. Kolda, B. Bader, "Tensor decomposition and
+  applications". SIAM Applied Mathematics and Applications
+  2009.
+}
+\seealso{
+  \code{\link{tucker}}
+}
+
