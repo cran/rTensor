@@ -26,7 +26,11 @@
   matrices} \item{\code{D}}{population-leve matrix \code{D
   = W\%*\%t(W)}, where W is constructed by stacking the
   truncated right eigenvectors of slicewise PCA along the
-  third mode} }
+  third mode} \item{\code{est}}{estimate of \code{tnsr}
+  after compression} \item{\code{norm_percent}}{the percent
+  of Frobenius norm explained by the approximation}
+  \item{\code{fnorm_resid}}{the Frobenius norm of the error
+  \code{fnorm(est-tnsr)}} }
 }
 \description{
   The default Population Value Decomposition (PVD) of a
@@ -34,19 +38,19 @@
   P, V, and D to account for variances within as well as
   across the images. Structurally similar to Tucker
   (\code{\link{tucker}}) and GLRAM (\code{\link{mpca}}),
-  but retains crucial differences. Requires \code{2N_3 + 2}
+  but retains crucial differences. Requires \code{2*n3 + 2}
   parameters to specified the final ranks of P, V, and D,
-  where N_3 Consult Crainiceanu et al. The third mode is
-  for how many images are in the set. (2013) for the
+  where n3 is the third mode (how many images are in the
+  set). Consult Crainiceanu et al. (2013) for the
   construction and rationale behind the PVD model.
 }
 \details{
   The PVD is not an iterative method, but instead relies on
-  \code{N_3 + 2}separate PCA decompositions. The third mode
+  \code{n3 + 2}separate PCA decompositions. The third mode
   is for how many images are in the set.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(100L,10L,10L),data=runif(1000))
+tnsr <- rand_tensor(c(10,5,100))
 pvdD<-pvd(tnsr,uranks=rep(8,100),wranks=rep(4,100),a=8,b=4)
 }
 \references{

@@ -24,9 +24,13 @@
   matrices given by \code{ranks}}
   \item{\code{conv}}{whether or not \code{resid} <
   \code{tol} by the last iteration}
-  \item{\code{norm_percent}}{the percent of Frobenius norm
-  explained by the approximation} \item{\code{resid}}{the
-  relative error in Frobenius norm.} }
+  \item{\code{est}}{estimate of \code{tnsr} after
+  compression} \item{\code{norm_percent}}{the percent of
+  Frobenius norm explained by the approximation}
+  \item{\code{fnorm_resid}}{the Frobenius norm of the error
+  \code{fnorm(est-tnsr)}} \item{\code{all_resids}}{vector
+  containing the Frobenius norm of error for all the
+  iterations} }
 }
 \description{
   This is basically the Tucker decomposition of a K-Tensor,
@@ -48,20 +52,14 @@
 }
 \note{
   The length of \code{ranks} must match
-  \code{getNumModes(tnsr)-1}.
+  \code{tnsr@num_modes-1}.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(100L,10L,10L),data=runif(10000))
+tnsr <-rand_tensor(c(100,10,10))
 mpcaD <- mpca(tnsr,ranks=c(30,5))
 mpcaD$conv
 mpcaD$norm_percent
-plot(mpcaD$resid)
-#####
-smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-smallmpcaD <- mpca(smalltnsr,ranks=c(5,5))
-smallmpcaD$conv
-smallmpcaD$norm_percent
-plot(smallmpcaD$resid)
+plot(mpcaD$all_resids)
 }
 \references{
   H. Lu, K. Plataniotis, A. Venetsanopoulos, "Mpca:

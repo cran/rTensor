@@ -17,31 +17,35 @@
   instance using \code{new}, it is also possible to do so
   by passing the data into \code{\link{as.tensor}}.
 
-  All 3 slots of a Tensor instance can be obtained using
-  \code{@}, but it is recommended to use the getter
-  functions since these have built-in checks. See
-  \code{\link{getModes-methods}},
-  \code{\link{getNumModes-methods}}, and
-  \code{\link{getData-methods}}.
+  Each slot of a Tensor instance can be obtained using
+  \code{@}.
 
   The following methods are overloaded for the Tensor
   class: \code{\link{dim-methods}},
   \code{\link{head-methods}}, \code{\link{tail-methods}},
   \code{\link{print-methods}}, \code{\link{show-methods}},
-  \code{\link{sweep-methods}}, element-wise array
-  operations, and array subsetting.
+  element-wise array operations, array subsetting (extract
+  via `['), array subset replacing (replace via `[<-'), and
+  \code{\link{tperm-methods}}, which is a wrapper around
+  the base \code{aperm} method.
+
+  To sum across any one mode of a tenor, use the function
+  \code{\link{modeSum-methods}}. To compute the mean across
+  any one mode, use \code{\link{modeMean-methods}}.
 
   You can always unfold any Tensor into a matrix, and the
   \code{\link{unfold-methods}},
   \code{\link{rs_unfold-methods}}, and
   \code{\link{cs_unfold-methods}} methods are for that
   purpose. The output can be kept as a Tensor with 2 modes
-  or a \code{matrix} object.
+  or a \code{matrix} object. Note that the m-mode unfolding
+  is the same as rs_unfold for mode m, and matvec is the
+  same as cs_unfold for mode 2. The vectorization function
+  is also provided as \code{vec}.
 
   Conversion from \code{array}/\code{matrix} to Tensor is
   facilitated via \code{\link{as.tensor}}. To convert from
-  a Tensor instance, simply invoke
-  \code{\link{getData-methods}}.
+  a Tensor instance, simply invoke \code{@data}.
 
   The Frobenius norm of the Tensor is given by
   \code{\link{fnorm-methods}}, while the inner product
@@ -55,11 +59,11 @@
   in doing statistics with Tensors.
 
   For Tensors with 3 modes, we also overloaded \code{t}
-  (transpose), defined by Kilmer et.al (2013). See
-  \code{\link{t-methods}}.
+  (transpose) and \code{\link{image-methods}}, defined by
+  Kilmer et.al (2013). See \code{\link{t-methods}}.
 
-  To create a Tensor with random entries, see
-  \code{\link{rand_tensor}}. }
+  To create a Tensor with i.i.d. random normal(0, 1)
+  entries, see \code{\link{rand_tensor}}. }
 }
 \note{
   All of the decompositions and regression models in this
@@ -74,13 +78,11 @@
 
 \section{Methods}{
   \describe{ \item{[}{\code{signature(tnsr = "Tensor")}:
-  ... } \item{cs_unfold}{\code{signature(tnsr = "Tensor")}:
-  ... } \item{dim}{\code{signature(tnsr = "Tensor")}: ... }
+  ... } \item{[<-}{\code{signature(tnsr = "Tensor")}: ... }
+  \item{cs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
+  \item{dim}{\code{signature(tnsr = "Tensor")}: ... }
   \item{fnorm}{\code{signature(tnsr = "Tensor")}: ... }
-  \item{getData}{\code{signature(tnsr = "Tensor")}: ... }
-  \item{getModes}{\code{signature(tnsr = "Tensor")}: ... }
-  \item{getNumModes}{\code{signature(tnsr = "Tensor")}: ...
-  } \item{head}{\code{signature(tnsr = "Tensor")}: ... }
+  \item{head}{\code{signature(tnsr = "Tensor")}: ... }
   \item{initialize}{\code{signature(.Object = "Tensor")}:
   ... } \item{innerProd}{\code{signature(tnsr1 = "Tensor",
   tnsr2 = "Tensor")}: ... }
@@ -96,19 +98,20 @@
   \item{print}{\code{signature(tnsr = "Tensor")}: ... }
   \item{rs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
   \item{show}{\code{signature(tnsr = "Tensor")}: ... }
-  \item{sweep}{\code{signature(tnsr = "Tensor")}: ... }
   \item{t}{\code{signature(tnsr = "Tensor")}: ... }
   \item{tail}{\code{signature(tnsr = "Tensor")}: ... }
-  \item{unfold}{\code{signature(tnsr = "Tensor")}: ... } }
+  \item{unfold}{\code{signature(tnsr = "Tensor")}: ... }
+  \item{tperm}{\code{signature(tnsr = "Tensor")}: ...}
+  \item{image}{\code{signature(tnsr = "Tensor")}: ...} }
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 class(tnsr)
 tnsr
 print(tnsr)
-getModes(tnsr)
-getNumModes(tnsr)
-head(getData(tnsr))
+dim(tnsr)
+tnsr@num_modes
+tnsr@data
 }
 \author{
   James Li \email{jamesyili@gmail.com}

@@ -2,8 +2,10 @@
 \name{[-methods}
 \alias{[,Tensor-method}
 \alias{[-methods}
+\alias{[<-}
+\alias{[<-,Tensor-method}
 \alias{extract,Tensor-method}
-\title{Extract for Tensor}
+\title{Extract or Replace Subtensors}
 \arguments{
   \item{x}{Tensor to be subset}
 
@@ -12,22 +14,30 @@
 
   \item{drop}{whether or not to reduce the number of modes
   to exclude those that have '1' as the mode}
+
+  \item{value}{either vector, matrix, or array that will
+  replace the subtensor}
 }
 \value{
-  subTensor of class Tensor
+  an object of class Tensor
 }
 \description{
-  Extends '[' for Tensor class. Works exactly as it would
-  for the base 'array' class.
+  Extends '[' and '[<-' from the base array class for the
+  Tensor class. Works exactly as it would for the base
+  'array' class.
 }
 \details{
   \code{x[i,j,...,drop=TRUE]}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 tnsr[1,2,3]
 tnsr[3,1,]
 tnsr[,,5]
 tnsr[,,5,drop=FALSE]
+
+tnsr[1,2,3] <- 3; tnsr[1,2,3]
+tnsr[3,1,] <- rep(0,5); tnsr[3,1,]
+tnsr[,2,] <- matrix(0,nrow=3,ncol=5); tnsr[,2,]
 }
 

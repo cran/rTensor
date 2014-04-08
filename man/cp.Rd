@@ -24,16 +24,20 @@
   \code{num_components} columns} \item{\code{conv}}{whether
   or not \code{resid} < \code{tol} by the last iteration}
   \item{\code{norm_percent}}{the percent of Frobenius norm
-  explained by the approximation} \item{\code{resid}}{the
-  relative error in Frobenius norm.} }
+  explained by the approximation}
+  \item{\code{est}}{estimate of \code{tnsr} after
+  compression} \item{\code{fnorm_resid}}{the Frobenius norm
+  of the error \code{fnorm(est-tnsr)}}
+  \item{\code{all_resids}}{vector containing the Frobenius
+  norm of error for all the iterations} }
 }
 \description{
   Canonical Polyadic (CP) decomposition of a tensor, aka
   CANDECOMP/PARAFRAC. Approximate a K-Tensor using a sum of
   \code{num_components} rank-1 K-Tensors. A rank-1 K-Tensor
   can be written as an outer product of K vectors. There
-  are a total of \code{num_compoents * getNumModes(tnsr)}
-  vectors in the output, stored in \code{getNumModes(tnsr)}
+  are a total of \code{num_compoents *tnsr@num_modes}
+  vectors in the output, stored in \code{tnsr@num_modes}
   matrices, each with \code{num_components} columns. This
   is an iterative algorithm, with two possible stopping
   conditions: either relative error in Frobenius norm has
@@ -47,17 +51,11 @@
   operations on large tensors.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+tnsr <- rand_tensor(c(6,7,8))
 cpD <- cp(tnsr,num_components=5)
 cpD$conv
 cpD$norm_percent
-plot(cpD$resid)
-#####
-smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-smallcpD <- cp(smalltnsr,num_components=5)
-smallcpD$conv
-smallcpD$norm_percent
-plot(smallcpD$resid)
+plot(cpD$all_resids)
 }
 \references{
   T. Kolda, B. Bader, "Tensor decomposition and

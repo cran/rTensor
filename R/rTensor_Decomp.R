@@ -9,21 +9,22 @@
 #'@rdname hosvd
 #'@aliases hosvd
 #'@param tnsr Tensor with K modes
-#'@param ranks a vector of desired modes in the output core tensor, default is \code{getModes(tnsr)}
+#'@param ranks a vector of desired modes in the output core tensor, default is \code{tnsr@@modes}
 #'@return a list containing the following:\describe{
 #'\item{\code{Z}}{core tensor with modes speficied by \code{ranks}}
 #'\item{\code{U}}{a list of orthogonal matrices, one for each mode}
-#'\item{\code{resid}}{the relative error in Frobenius norm - if there was no truncation, then this is O(mach_eps). }
+#'\item{\code{est}}{estimate of \code{tnsr} after compression}
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)} - if there was no truncation, then this is O(mach_eps) }
 #'}
 #'@seealso \code{\link{tucker}}
 #'@references L. Lathauwer, B.Moor, J. Vanderwalle "A multilinear singular value decomposition". Journal of Matrix Analysis and Applications 2000.
-#'@note The length of \code{ranks} must match \code{getNumModes(tnsr)}.
+#'@note The length of \code{ranks} must match \code{tnsr@@num_modes}.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+#'tnsr <- rand_tensor(c(6,7,8))
 #'hosvdD <-hosvd(tnsr)
-#'hosvdD$resid
+#'hosvdD$fnorm_resid
 #'hosvdD2 <-hosvd(tnsr,ranks=c(3,3,4))
-#'hosvdD2$resid
+#'hosvdD2$fnorm_resid
 hosvd <- function(tnsr,ranks=NULL){
 	#stopifnot(is(tnsr,"Tensor"))
 	num_modes <- tnsr@num_modes
@@ -43,14 +44,15 @@ hosvd <- function(tnsr,ranks=NULL){
 	close(pb)
 	#computes the core tensor
 	Z <- ttl(tnsr,lapply(U_list,t),ms=1:num_modes)
-	resid <- fnorm(ttl(Z,U_list,ms=1:num_modes)-tnsr)/fnorm(tnsr)
+	est <- ttl(Z,U_list,ms=1:num_modes)
+	resid <- fnorm(est-tnsr)
 	#put together the return list, and returns
-	list(Z=Z,U=U_list,resid=resid)	
+	list(Z=Z,U=U_list,est=est,fnorm_resid=resid)	
 }
 
 #'Canonical Polyadic Decomposition
 #'
-#'Canonical Polyadic (CP) decomposition of a tensor, aka CANDECOMP/PARAFRAC. Approximate a K-Tensor using a sum of \code{num_components} rank-1 K-Tensors. A rank-1 K-Tensor can be written as an outer product of K vectors. There are a total of \code{num_compoents * getNumModes(tnsr)} vectors in the output, stored in \code{getNumModes(tnsr)} matrices, each with \code{num_components} columns. This is an iterative algorithm, with two possible stopping conditions: either relative error in Frobenius norm has gotten below \code{tol}, or the \code{max_iter} number of iterations has been reached. For more details on CP decomposition, consult Kolda and Bader (2009).
+#'Canonical Polyadic (CP) decomposition of a tensor, aka CANDECOMP/PARAFRAC. Approximate a K-Tensor using a sum of \code{num_components} rank-1 K-Tensors. A rank-1 K-Tensor can be written as an outer product of K vectors. There are a total of \code{num_compoents *tnsr@@num_modes} vectors in the output, stored in \code{tnsr@@num_modes} matrices, each with \code{num_components} columns. This is an iterative algorithm, with two possible stopping conditions: either relative error in Frobenius norm has gotten below \code{tol}, or the \code{max_iter} number of iterations has been reached. For more details on CP decomposition, consult Kolda and Bader (2009).
 #'@export
 #'@details Uses the Alternating Least Squares (ALS) estimation procedure. A progress bar is included to help monitor operations on large tensors.
 #'@name cp
@@ -65,22 +67,18 @@ hosvd <- function(tnsr,ranks=NULL){
 #'\item{\code{U}}{a list of matrices - one for each mode - each matrix with \code{num_components} columns}
 #'\item{\code{conv}}{whether or not \code{resid} < \code{tol} by the last iteration}
 #'\item{\code{norm_percent}}{the percent of Frobenius norm explained by the approximation}
-#'\item{\code{resid}}{the relative error in Frobenius norm.}
+#'\item{\code{est}}{estimate of \code{tnsr} after compression}
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)}}
+#'\item{\code{all_resids}}{vector containing the Frobenius norm of error for all the iterations}
 #'}
 #'@seealso \code{\link{tucker}}
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+#'tnsr <- rand_tensor(c(6,7,8))
 #'cpD <- cp(tnsr,num_components=5) 
 #'cpD$conv 
 #'cpD$norm_percent 
-#'plot(cpD$resid) 
-#'#####
-#'smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-#'smallcpD <- cp(smalltnsr,num_components=5)
-#'smallcpD$conv 
-#'smallcpD$norm_percent
-#'plot(smallcpD$resid)
+#'plot(cpD$all_resids) 
 cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	if(is.null(num_components)) stop("num_components must be specified")
 	stopifnot(is(tnsr,"Tensor"))
@@ -100,7 +98,7 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	#set up convergence check
 	fnorm_resid <- rep(0, max_iter)
 	CHECK_CONV <- function(est){
-		curr_resid <- fnorm(tnsr - est)
+		curr_resid <- fnorm(est - tnsr)
 		fnorm_resid[curr_iter] <<- curr_resid
 		if (curr_iter==1) return(FALSE)
 		if (abs(curr_resid-fnorm_resid[curr_iter-1])/tnsr_norm < tol) return(TRUE)
@@ -137,12 +135,12 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	#put together return list, and returns
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
 	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
-	invisible(list(lambdas=lambdas, U=U_list, conv=converged, norm_percent=norm_percent, resid=fnorm_resid))
+	invisible(list(lambdas=lambdas, U=U_list, conv=converged, est=est, norm_percent=norm_percent, fnorm_resid = tail(fnorm_resid,1),all_resids=fnorm_resid))
 }
 
 #'Tucker Decomposition
 #'
-#'The Tucker decomposition of a tensor. Approximates a K-Tensor using a n-mode product of a core tensor (with modes specified by \code{ranks}) with orthogonal factor matrices. If there is no truncation in one of the modes, then this is the same as the MPCA, \code{\link{mpca}}. If there is no truncation in all the modes (i.e. \code{ranks = getModes(tnsr)}), then this is the same as the HOSVD, \code{\link{hosvd}}. This is an iterative algorithm, with two possible stopping conditions: either relative error in Frobenius norm has gotten below \code{tol}, or the \code{max_iter} number of iterations has been reached. For more details on the Tucker decomposition, consult Kolda and Bader (2009).
+#'The Tucker decomposition of a tensor. Approximates a K-Tensor using a n-mode product of a core tensor (with modes specified by \code{ranks}) with orthogonal factor matrices. If there is no truncation in one of the modes, then this is the same as the MPCA, \code{\link{mpca}}. If there is no truncation in all the modes (i.e. \code{ranks = tnsr@@modes}), then this is the same as the HOSVD, \code{\link{hosvd}}. This is an iterative algorithm, with two possible stopping conditions: either relative error in Frobenius norm has gotten below \code{tol}, or the \code{max_iter} number of iterations has been reached. For more details on the Tucker decomposition, consult Kolda and Bader (2009).
 #'@export
 #'@details Uses the Alternating Least Squares (ALS) estimation procedure also known as Higher-Order Orthogonal Iteration (HOOI). Intialized using a (Truncated-)HOSVD. A progress bar is included to help monitor operations on large tensors.
 #'@name tucker
@@ -156,24 +154,20 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 #'\item{\code{Z}}{the core tensor, with modes specified by \code{ranks}}
 #'\item{\code{U}}{a list of orthgonal factor matrices - one for each mode, with the number of columns of the matrices given by \code{ranks}}
 #'\item{\code{conv}}{whether or not \code{resid} < \code{tol} by the last iteration}
+#'\item{\code{est}}{estimate of \code{tnsr} after compression}
 #'\item{\code{norm_percent}}{the percent of Frobenius norm explained by the approximation}
-#'\item{\code{resid}}{the relative error in Frobenius norm.}
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)}}
+#'\item{\code{all_resids}}{vector containing the Frobenius norm of error for all the iterations}
 #'}
 #'@seealso \code{\link{hosvd}}, \code{\link{mpca}}
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
-#'@note The length of \code{ranks} must match \code{getNumModes(tnsr)}.
+#'@note The length of \code{ranks} must match \code{tnsr@@num_modes}.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+#'tnsr <- rand_tensor(c(6,7,8))
 #'tuckerD <- tucker(tnsr,ranks=c(3,3,4))
 #'tuckerD$conv 
 #'tuckerD$norm_percent
-#'plot(tuckerD$resid/fnorm(tnsr))
-#'#####
-#'smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-#'smalltuckerD <- tucker(smalltnsr,ranks=c(5,6,7))
-#'smalltuckerD$conv
-#'smalltuckerD$norm_percent 
-#'plot(smalltuckerD$resid)
+#'plot(tuckerD$all_resids)
 tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	stopifnot(is(tnsr,"Tensor"))
 	if(is.null(ranks)) stop("ranks must be specified")
@@ -201,12 +195,14 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	#main loop (until convergence or max_iter)
 	while((curr_iter < max_iter) && (!converged)){
 	setTxtProgressBar(pb,curr_iter)	
+	modes <- tnsr@modes
 	modes_seq <- 1:num_modes
 		for(m in modes_seq){
 			#core Z minus mode m
 			X <- ttl(tnsr,lapply(U_list[-m],t),ms=modes_seq[-m])
 			#truncated SVD of X
-			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data)$u)[,1:ranks[m]]
+			#U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m],nv=prod(modes[-m]))$u)[,1:ranks[m]]
+			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u)[,1:ranks[m]]
 		}
 		#compute core tensor Z
 		Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)
@@ -224,7 +220,8 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	#put together return list, and returns
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
 	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
-	invisible(list(Z=Z, U=U_list, conv=converged, norm_percent = norm_percent, resid=fnorm_resid))
+	est <- ttl(Z,U_list,ms=1:num_modes)
+	invisible(list(Z=Z, U=U_list, conv=converged, est=est, norm_percent = norm_percent, fnorm_resid=tail(fnorm_resid,1), all_resids=fnorm_resid))
 }
 
 #'Multilinear Principal Components Analysis
@@ -243,24 +240,20 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 #'\item{\code{Z_ext}}{the extended core tensor, with the first K-1 modes given by \code{ranks}}
 #'\item{\code{U}}{a list of K-1 orthgonal factor matrices - one for each compressed mode, with the number of columns of the matrices given by \code{ranks}}
 #'\item{\code{conv}}{whether or not \code{resid} < \code{tol} by the last iteration}
+#'\item{\code{est}}{estimate of \code{tnsr} after compression}
 #'\item{\code{norm_percent}}{the percent of Frobenius norm explained by the approximation}
-#'\item{\code{resid}}{the relative error in Frobenius norm.}
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)}}
+#'\item{\code{all_resids}}{vector containing the Frobenius norm of error for all the iterations}
 #'}
 #'@seealso \code{\link{tucker}}, \code{\link{hosvd}}
 #'@references H. Lu, K. Plataniotis, A. Venetsanopoulos, "Mpca: Multilinear principal component analysis of tensor objects". IEEE Trans. Neural networks, 2008.
-#'@note The length of \code{ranks} must match \code{getNumModes(tnsr)-1}.
+#'@note The length of \code{ranks} must match \code{tnsr@@num_modes-1}.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(100L,10L,10L),data=runif(10000))
+#'tnsr <-rand_tensor(c(100,10,10))
 #'mpcaD <- mpca(tnsr,ranks=c(30,5))
 #'mpcaD$conv
 #'mpcaD$norm_percent
-#'plot(mpcaD$resid)
-#'#####
-#'smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-#'smallmpcaD <- mpca(smalltnsr,ranks=c(5,5))
-#'smallmpcaD$conv
-#'smallmpcaD$norm_percent
-#'plot(smallmpcaD$resid)
+#'plot(mpcaD$all_resids)
 mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	if(is.null(ranks)) stop("ranks must be specified")
 	stopifnot(is(tnsr,"Tensor"))
@@ -295,12 +288,13 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	#main loop (until convergence or max_iter)
 	while((curr_iter < max_iter) && (!converged)){
 	setTxtProgressBar(pb,curr_iter)
+	modes <-tnsr@modes
 	modes_seq <- 1:(num_modes-1)
 		for(m in modes_seq){
 			#extended core Z minus mode m
 			X <- ttl(tnsr,lapply(U_list[-c(m,num_modes)],t),ms=modes_seq[-m])
 			#truncated SVD of X
-			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data)$u)[,1:ranks[m]]
+			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u)[,1:ranks[m]]
 		}
 		#compute core tensor Z_ext
 		Z_ext <- ttm(X,mat=t(U_list[[num_modes-1]]),m=num_modes-1)
@@ -315,16 +309,17 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	close(pb)
 	#end of main loop
 	#put together return list, and returns
+	est <- ttl(Z_ext,U_list[-num_modes],ms=1:(num_modes-1))
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
 	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
-	invisible(list(Z_ext=Z_ext, U=U_list, conv=converged, norm_percent = norm_percent, resid=fnorm_resid))
+	invisible(list(Z_ext=Z_ext, U=U_list, conv=converged, est=est, norm_percent = norm_percent, fnorm_resid=tail(fnorm_resid,1), all_resids=fnorm_resid))
 }
 
 #'Population Value Decomposition
 #'
-#'The default Population Value Decomposition (PVD) of a series of 2D images. Constructs population-level matrices P, V, and D to account for variances within as well as across the images. Structurally similar to Tucker (\code{\link{tucker}}) and GLRAM (\code{\link{mpca}}), but retains crucial differences. Requires \code{2N_3 + 2} parameters to specified the final ranks of P, V, and D, where N_3 Consult Crainiceanu et al. The third mode is for how many images are in the set. (2013) for the construction and rationale behind the PVD model.
+#'The default Population Value Decomposition (PVD) of a series of 2D images. Constructs population-level matrices P, V, and D to account for variances within as well as across the images. Structurally similar to Tucker (\code{\link{tucker}}) and GLRAM (\code{\link{mpca}}), but retains crucial differences. Requires \code{2*n3 + 2} parameters to specified the final ranks of P, V, and D, where n3 is the third mode (how many images are in the set). Consult Crainiceanu et al. (2013) for the construction and rationale behind the PVD model.
 #'@export
-#'@details The PVD is not an iterative method, but instead relies on \code{N_3 + 2}separate PCA decompositions. The third mode is for how many images are in the set.
+#'@details The PVD is not an iterative method, but instead relies on \code{n3 + 2}separate PCA decompositions. The third mode is for how many images are in the set.
 #'@name pvd
 #'@rdname pvd
 #'@aliases pvd
@@ -337,44 +332,53 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 #'\item{\code{P}}{population-level matrix \code{P = U\%*\%t(U)}, where U is constructed by stacking the truncated left eigenvectors of slicewise PCA along the third mode}
 #'\item{\code{V}}{a list of image-level core matrices}
 #'\item{\code{D}}{population-leve matrix \code{D = W\%*\%t(W)}, where W is constructed by stacking the truncated right eigenvectors of slicewise PCA along the third mode}
+#'\item{\code{est}}{estimate of \code{tnsr} after compression}
+#'\item{\code{norm_percent}}{the percent of Frobenius norm explained by the approximation}
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)}}
 #'}
 #'@references C. Crainiceanu, B. Caffo, S. Luo, V. Zipunnikov, N. Punjabi, "Population value decomposition: a framework for the analysis of image populations". Journal of the American Statistical Association, 2013.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(100L,10L,10L),data=runif(1000))
+#'tnsr <- rand_tensor(c(10,5,100))
 #'pvdD<-pvd(tnsr,uranks=rep(8,100),wranks=rep(4,100),a=8,b=4)
 pvd <- function(tnsr,uranks=NULL,wranks=NULL,a=NULL,b=NULL){
 	if(tnsr@num_modes!=3) stop("PVD only for 3D")
 	if(is.null(uranks)||is.null(wranks)) stop("U and V ranks must be specified")
 	if(is.null(a)||is.null(b)) stop("a and b must be specified")
 	modes <- tnsr@modes
-	n <- modes[1]
-	if(length(uranks)!=n||length(wranks)!=n) stop("ranks must be of length n1")
+	n <- modes[3]
+	if(length(uranks)!=n||length(wranks)!=n) stop("ranks must be of length n3")
 	pb <- txtProgressBar(min=0,max=(n+3),style=3)
 	x <- tnsr@data
 	Us <- vector('list',n)
 	Vs <- vector('list',n)
 	S <- vector('list',n)
 	for(i in 1:n){
-		svdz <- svd(x[i,,],nu=uranks[i],nv=wranks[i])
+		svdz <- svd(x[,,i],nu=uranks[i],nv=wranks[i])
 		Us[[i]] <- svdz$u
 		Vs[[i]] <- svdz$v
 		S[[i]] <- svdz$d[1:min(uranks[i],wranks[i])]
 		setTxtProgressBar(pb,i)
 	}
-	U <- matrix(unlist(Us),nrow=modes[2],ncol=sum(uranks)*n)
-	eigenU <- eigen(U%*%t(U))
-	P <- eigenU$vectors[,1:a] #U ~ PP^TU
+	U <- matrix(unlist(Us),nrow=modes[1],ncol=sum(uranks)*n)
+	#eigenU <- eigen(U%*%t(U))
+	P <- eigen(U%*%t(U))$vectors[,1:a] #E-vecs of UU^T
 	setTxtProgressBar(pb,n+1)
-	V <- matrix(unlist(Vs),nrow=modes[3],ncol=sum(wranks)*n)
-	eigenV <- eigen(V%*%t(V))
-	Dt <- eigenV$vectors[,1:b] #V ~ DD^TV
+	V <- matrix(unlist(Vs),nrow=modes[2],ncol=sum(wranks)*n)
+	#eigenV <- eigen(V%*%t(V))
+	Dt <- eigen(V%*%t(V))$vectors[,1:b] #E-vecs of VV^T
+	D <- t(Dt)
 	setTxtProgressBar(pb,n+2)
 	V2 <- vector('list',n)
+	est <- array(0,dim=modes)
 	for(i in 1:n){
 		V2[[i]] <- (t(P)%*%Us[[i]])%*%diag(S[[i]],nrow=uranks[i],ncol=wranks[i])%*%(t(Vs[[i]])%*%Dt)
+		est[,,i] <- P%*%V2[[i]]%*%D
 	}
+	est <- as.tensor(est)
+	fnorm_resid <- fnorm(est-tnsr)	
 	setTxtProgressBar(pb,n+3)
-	invisible(list(P=P,D=D,V=V2))
+	norm_percent<-1-(fnorm_resid/fnorm(tnsr))
+	invisible(list(P=P,D=D,V=V2,est=est,norm_percent=norm_percent,fnorm_resid=fnorm_resid))
 }
 
 #'Tensor Singular Value Decomposition
@@ -394,7 +398,7 @@ pvd <- function(tnsr,uranks=NULL,wranks=NULL,a=NULL,b=NULL){
 #'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
 #'@note Computation involves complex values, but if the inputs are real, then the outputs are also real. Some loss of precision occurs in the truncation of the imaginary components during the FFT and inverse FFT.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(10L,10L,100L),data=runif(10000))
+#'tnsr <- rand_tensor()
 #'tsvdD <- t_svd(tnsr)
 t_svd<-function(tnsr){
 	if(tnsr@num_modes!=3) stop("T-SVD only implemented for 3d so far")
@@ -412,7 +416,7 @@ t_svd<-function(tnsr){
 	U_arr <- array(0,dim=c(n1,n1,n3))
 	V_arr <- array(0,dim=c(n2,n2,n3))
 	m <- min(n1,n2)		
-	S_mat <- matrix(0,nrow=m,ncol=n3)
+	S_arr <- array(0,dim=c(n1,n2,n3))
 	#Think of a way to avoid a loop in the beginning
 	#Problem is that svd returns a list but ideally we want 3 arrays
 	#Even with unlist this doesn't seem possible
@@ -421,13 +425,13 @@ t_svd<-function(tnsr){
 		decomp <- svd(fftz[,,j],nu=n1,nv=n2)
 		U_arr[,,j] <- decomp$u
 		V_arr[,,j] <- decomp$v
-		S_mat[,j] <- decomp$d #length is min(n1,n2)
+		S_arr[,,j] <- diag(decomp$d,nrow=n1,ncol=n2) #length is min(n1,n2)
 	}	
 	close(pb)
 	#for each svd result, we want to apply ifft
 	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2,ifft),c(2,3,1)))
 	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2,ifft),c(2,3,1)))
-	S <- as.tensor(apply(S_mat,MARGIN=1,ifft))
+	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2,ifft),c(2,3,1)))
 	invisible(list(U=U,V=V,S=S))
 }
 
@@ -442,34 +446,61 @@ t_svd<-function(tnsr){
 #'@return a 3-Tensor 
 #'@seealso \code{\link{t_svd}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(10L,10L,100L),data=runif(10000))
+#'tnsr <- rand_tensor(c(10,10,10))
 #'tsvdD <- t_svd(tnsr)
 #'1 - fnorm(t_svd_reconstruct(tsvdD)-tnsr)/fnorm(tnsr)
-#'smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-#'smalltsvdD <- t_svd(smalltnsr)
-#'1 - fnorm(t_svd_reconstruct(smalltsvdD)-smalltnsr)/fnorm(smalltnsr)
 t_svd_reconstruct <- function(L){
-	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
-	Umodes <- L$U@modes
-	n1 <- Umodes[1]
-	n2 <- L$V@modes[1]
-	n3 <- Umodes[3]
-	S_fdiagonal <- array(0,c(n1,n2,n3))
-	S <- L$S@data
-	for (i in 1:n3){
-		S_fdiagonal[,,i] <- diag(S[i,],nrow=n1,ncol=n2)
-	}
-	S_fdiagonal <- as.tensor(S_fdiagonal)
-	t_mult(t_mult(L$U,S_fdiagonal),t(L$V))
+	t_mult(t_mult(L$U,L$S),t(L$V))
 }
 
 ###t-compress (Not Supported)
-.t_compress <- function(tnsr,k1,k2){
-	A = modeSum(tnsr,3)
+.t_compress <- function(tnsr,k){
+	modes <- tnsr@modes
+	n1 <- modes[1]
+	n2 <- modes[2]
+	n3 <- modes[3]
+	#progress bar
+	pb <- txtProgressBar(min=0,max=n3,style=3)
+	#define ifft
+	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
+	#fft for each of the n1n2 vectors (of length n3) along mode 3
+	fftz <- aperm(apply(tnsr@data,MARGIN=1:2,fft),c(2,3,1))
+	#svd for each face (svdz is a list of the results)
+	U_arr <- array(0,dim=c(n1,n1,n3))
+	V_arr <- array(0,dim=c(n2,n2,n3))
+	m <- min(n1,n2)		
+	S_arr <- array(0,dim=c(n1,n2,n3))
+	#Think of a way to avoid a loop in the beginning
+	#Problem is that svd returns a list but ideally we want 3 arrays
+	#Even with unlist this doesn't seem possible
+	for (j in 1:n3){
+		setTxtProgressBar(pb,j)
+		decomp <- svd(fftz[,,j],nu=n1,nv=n2)
+		U_arr[,,j] <- decomp$u
+		V_arr[,,j] <- decomp$v
+		S_arr[,,j] <- diag(decomp$d,nrow=n1,ncol=n2) #length is min(n1,n2)
+	}	
+	close(pb)
+	#for each svd result, we want to apply ifft
+	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2,ifft),c(2,3,1)))
+	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2,ifft),c(2,3,1)))
+	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2,ifft),c(2,3,1)))
+	
+	est <- as.tensor(array(0,dim=modes))
+	for (i in 1:k){
+		est <- est + t_mult(t_mult(U[,i,,drop=FALSE],S[i,i,,drop=FALSE]),t(V[,i,,drop=FALSE]))
+	}
+	resid <- fnorm(est-tnsr)
+	invisible(list(est=est, fnorm_resid = resid, norm_percent = 1-resid/fnorm(tnsr)))
+}
+
+###t-compress2 (Not Supported)
+.t_compress2 <- function(tnsr,k1,k2){
+	A = modeSum(tnsr,m=3,drop=TRUE)
 	svdz <- svd(A@data,nu=k1,nv=k2)
 	Util <- svdz$u
 	Vtil <- svdz$v
-	modes <- getModes(tnsr)
+	modes <- tnsr@modes
 	n3 <- modes[3]
 	core <- array(0,dim=c(k1,k2,n3))
 	for(i in 1:n3){
@@ -482,5 +513,5 @@ t_svd_reconstruct <- function(L){
 		}	
 	}
 	resid <- fnorm(tnsr - est)
-	invisible(list(core = as.tensor(core), resid = resid, norm_percent = 1-resid/fnorm(tnsr)))
+	invisible(list(core = as.tensor(core), est=est, fnorm_resid = resid, norm_percent = 1-resid/fnorm(tnsr)))
 }

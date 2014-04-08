@@ -18,12 +18,10 @@
 #'@section Methods:
 #'  \describe{
 #'    \item{[}{\code{signature(tnsr = "Tensor")}: ... }
+#'    \item{[<-}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{cs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{dim}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{fnorm}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{getData}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{getModes}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{getNumModes}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{head}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{initialize}{\code{signature(.Object = "Tensor")}: ... }
 #'    \item{innerProd}{\code{signature(tnsr1 = "Tensor", tnsr2 = "Tensor")}: ... }
@@ -37,39 +35,42 @@
 #'    \item{print}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{rs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{show}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{sweep}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{t}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{tail}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{unfold}{\code{signature(tnsr = "Tensor")}: ... }
+#'    \item{tperm}{\code{signature(tnsr = "Tensor")}: ...}
+#'    \item{image}{\code{signature(tnsr = "Tensor")}: ...}
 #'	 }
 #'@author James Li \email{jamesyili@@gmail.com}
 #'@details {This can be seen as a wrapper class to the base \code{array} class. While it is possible to create an instance using \code{new}, it is also possible to do so by passing the data into \code{\link{as.tensor}}.
 #'	
-#'All 3 slots of a Tensor instance can be obtained using \code{@@}, but it is recommended to use the getter functions since these have built-in checks. See \code{\link{getModes-methods}}, \code{\link{getNumModes-methods}}, and \code{\link{getData-methods}}.
+#'Each slot of a Tensor instance can be obtained using \code{@@}.
 #'
-#'The following methods are overloaded for the Tensor class: \code{\link{dim-methods}}, \code{\link{head-methods}}, \code{\link{tail-methods}}, \code{\link{print-methods}}, \code{\link{show-methods}}, \code{\link{sweep-methods}}, element-wise array operations, and array subsetting.
+#'The following methods are overloaded for the Tensor class: \code{\link{dim-methods}}, \code{\link{head-methods}}, \code{\link{tail-methods}}, \code{\link{print-methods}}, \code{\link{show-methods}},  element-wise array operations, array subsetting (extract via `['), array subset replacing (replace via `[<-'), and \code{\link{tperm-methods}}, which is a wrapper around the base \code{aperm} method.
 #'
-#'You can always unfold any Tensor into a matrix, and the \code{\link{unfold-methods}}, \code{\link{rs_unfold-methods}}, and \code{\link{cs_unfold-methods}} methods are for that purpose. The output can be kept as a Tensor with 2 modes or a \code{matrix} object. 
+#'To sum across any one mode of a tenor, use the function \code{\link{modeSum-methods}}. To compute the mean across any one mode, use \code{\link{modeMean-methods}}.
 #'
-#'Conversion from \code{array}/\code{matrix} to Tensor is facilitated via \code{\link{as.tensor}}. To convert from a Tensor instance, simply invoke \code{\link{getData-methods}}.
+#'You can always unfold any Tensor into a matrix, and the \code{\link{unfold-methods}}, \code{\link{rs_unfold-methods}}, and \code{\link{cs_unfold-methods}} methods are for that purpose. The output can be kept as a Tensor with 2 modes or a \code{matrix} object. Note that the m-mode unfolding is the same as rs_unfold for mode m, and matvec is the same as cs_unfold for mode 2. The vectorization function is also provided as \code{vec}.
+#'
+#'Conversion from \code{array}/\code{matrix} to Tensor is facilitated via \code{\link{as.tensor}}. To convert from a Tensor instance, simply invoke \code{@@data}.
 #'
 #'The Frobenius norm of the Tensor is given by \code{\link{fnorm-methods}}, while the inner product between two Tensors (of equal modes) is given by \code{\link{innerProd-methods}}. You can also sum through any one mode to obtain the K-1 Tensor sum using \code{\link{modeSum-methods}}. \code{\link{modeMean-methods}} provides similar functionality to obtain the K-1 Tensor mean. These are primarily meant to be used internally but may be useful in doing statistics with Tensors.
 #'
-#'For Tensors with 3 modes, we also overloaded \code{t} (transpose), defined by Kilmer et.al (2013). See \code{\link{t-methods}}.
+#'For Tensors with 3 modes, we also overloaded \code{t} (transpose) and \code{\link{image-methods}}, defined by Kilmer et.al (2013). See \code{\link{t-methods}}.
 #'
-#'To create a Tensor with random entries, see \code{\link{rand_tensor}}.
+#'To create a Tensor with i.i.d. random normal(0, 1) entries, see \code{\link{rand_tensor}}.
 #'}
 #'@note All of the decompositions and regression models in this package require a Tensor input.
 #'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
 #'@seealso \code{\link{as.tensor}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'class(tnsr)
 #'tnsr
 #'print(tnsr)
-#'getModes(tnsr)
-#'getNumModes(tnsr)
-#'head(getData(tnsr))
+#'dim(tnsr)
+#'tnsr@@num_modes
+#'tnsr@@data
 setClass("Tensor",
 representation(num_modes = "integer", modes = "integer", data="array"),
 validity = function(object){
@@ -85,64 +86,13 @@ validity = function(object){
 
 ###Generic Definitions
 
-#'Mode Getter for Tensor
-#'
-#'Return the vector of modes from a tensor. Safer than accessing the slot directly.
-#'
-#'@docType methods
-#'@name getModes-methods
-#'@details \code{getModes(tnsr)}
-#'@export
-#'@rdname getModes-methods
-#'@aliases getModes getModes,Tensor-method
-#'@param tnsr the Tensor instance
-#'@return an integer vector of the modes associated with \code{x}
-#'@seealso \code{\link{dim}}
-#'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'getModes(tnsr)
-setGeneric(name="getModes",
-def=function(tnsr){standardGeneric("getModes")})
-
-#'Number of Modes Getter for Tensor
-#'
-#'Return the number of modes from a tensor. Safer than accessing the slot directly.
-#'
-#'@docType methods
-#'@name getNumModes-methods
-#'@details \code{getNumModes(tnsr)}
-#'@export
-#'@rdname getNumModes-methods
-#'@aliases getNumModes getNumModes,Tensor-method
-#'@param tnsr the Tensor instance
-#'@return an integer of the number of modes associated with \code{x}
-#'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'getNumModes(tnsr)
-setGeneric(name="getNumModes",
-def=function(tnsr){standardGeneric("getNumModes")})
-
-#'Data Getter for Tensor
-#'
-#'Return the data (\code{array}, \code{matrix}, or \code{vector}) from a tensor. Safer than accessing the slot directly.
-#'
-#'@docType methods
-#'@name getData-methods
-#'@details \code{getData(tnsr)}
-#'@export
-#'@rdname getData-methods
-#'@aliases getData getData,Tensor-method
-#'@param tnsr the Tensor instance
-#'@return a (\code{array}, \code{matrix}, or \code{vector}) that holds the actual data
-#'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'getData(tnsr)
-setGeneric(name="getData",
-def=function(tnsr){standardGeneric("getData")})
-
 #'Tensor Unfolding
 #'
-#'Unfolds the tensor into a matrix, with the modes in \code{rs} onto the rows and modes in \code{cs} onto the columns. Note that \code{c(rs,cs)} must have the same elements (order doesn't matter) as \code{getModes(x)}. Within the rows and columns, the order of the unfolding is determined by the order of the modes. This convention is consistent with Kolda and Bader (2009). 
+#'Unfolds the tensor into a matrix, with the modes in \code{rs} onto the rows and modes in \code{cs} onto the columns. Note that \code{c(rs,cs)} must have the same elements (order doesn't matter) as \code{x@@modes}. Within the rows and columns, the order of the unfolding is determined by the order of the modes. This convention is consistent with Kolda and Bader (2009). 
+#'
+#'For Row Space Unfolding or m-mode Unfolding, see \code{\link{rs_unfold-methods}}. For Column Space Unfolding or matvec, see \code{\link{cs_unfold-methods}}.
+#'
+#'\code{vec} returns the vectorization of the tensor.
 #'
 #'@details \code{unfold(tnsr,rs=NULL,cs=NULL)}
 #'@export
@@ -157,7 +107,7 @@ def=function(tnsr){standardGeneric("getData")})
 #'@return matrix with \code{prod(rs)} rows and \code{prod(cs)} columns
 #'@seealso \code{\link{cs_unfold-methods}} and \code{\link{rs_unfold-methods}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'matT3<-unfold(tnsr,rs=2,cs=c(3,1))
 setGeneric(name="unfold",
 def=function(tnsr,rs,cs){standardGeneric("unfold")})
@@ -172,20 +122,21 @@ def=function(tnsr,rs,cs){standardGeneric("unfold")})
 #'@export
 #'@rdname rs_unfold-methods
 #'@aliases rs_unfold rs_unfold,Tensor-method
+####aliases rs_unfold,ANY-method
 #'@references T. Kolda and B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@param x the Tensor instance
 #'@param m the index of the mode to map onto the row space
-#'@return atrix with \code{getModes(x)[m]} rows and \code{prod(getModes(x)[-m])} columns
+#'@return atrix with \code{x@@modes[m]} rows and \code{prod(x@@modes[-m])} columns
 #'@seealso \code{\link{cs_unfold}} and \code{\link{unfold}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'matT2<-rs_unfold(tnsr,m=2)
 setGeneric(name="rs_unfold",
 def=function(tnsr,m){standardGeneric("rs_unfold")})
 
 #'Tensor Column Space Unfolding
 #'
-#'Unfolding of a tensor by mapping the mode 'm' onto the column space, and all other modes onto the row space. For 3-tensors, this is also known as the 'MatVec' operation. This is the prevalent unfolding for TSVD and T-MULT based on block circulant matrices.
+#'Unfolding of a tensor by mapping the mode 'm' onto the column space, and all other modes onto the row space. For 3-tensors, this is also known as the 'matvec' operation when \code{m=2}. In fact, we provide \code{matvec} for convenience as well. This is the prevalent unfolding for T-SVD and T-MULT based on block circulant matrices.
 #'@docType methods
 #'@name cs_unfold-methods
 #'@details \code{cs_unfold(tnsr,m=NULL)}
@@ -195,10 +146,10 @@ def=function(tnsr,m){standardGeneric("rs_unfold")})
 #'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
 #'@param tnsr the Tensor instance
 #'@param m the index of the mode to map onto the column space
-#'@return matrix with \code{prod(getModes(x)[-m])} rows and \code{getModes(x)[m]} columns
+#'@return matrix with \code{prod(x@@modes[-m])} rows and \code{x@@modes[m]} columns
 #'@seealso \code{\link{rs_unfold-methods}} and \code{\link{unfold-methods}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'matT1<-cs_unfold(tnsr,m=3)
 setGeneric(name="cs_unfold",
 def=function(tnsr,m){standardGeneric("cs_unfold")})
@@ -209,19 +160,20 @@ def=function(tnsr,m){standardGeneric("cs_unfold")})
 #'
 #'@docType methods
 #'@name modeSum-methods
-#'@details \code{modeSum(tnsr,m=NULL)}
+#'@details \code{modeSum(tnsr,m=NULL,drop=FALSE)}
 #'@export
 #'@rdname modeSum-methods
 #'@aliases modeSum modeSum,Tensor-method
 #'@param tnsr the Tensor instance
 #'@param m the index of the mode to sum across
-#'@return K-1 tensor, where \code{K = getNumModes(x)}
-#'@seealso \code{\link{modeMean}} and \code{\link{sweep}}
+#'@param drop whether or not mode m should be dropped
+#'@return K-1 or K tensor, where \code{K = x@@num_modes}
+#'@seealso \code{\link{modeMean}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'modeSum(tnsr,3)
+#'tnsr <- rand_tensor()
+#'modeSum(tnsr,3,drop=TRUE)
 setGeneric(name="modeSum",
-def=function(tnsr,m){standardGeneric("modeSum")})
+def=function(tnsr,m,drop){standardGeneric("modeSum")})
 
 #'Tensor Mean Across Single Mode
 #'
@@ -229,19 +181,20 @@ def=function(tnsr,m){standardGeneric("modeSum")})
 #'
 #'@docType methods
 #'@name modeMean-methods
-#'@details \code{modeMean(tnsr,m=NULL)}
+#'@details \code{modeMean(tnsr,m=NULL,drop=FALSE)}
 #'@export
 #'@rdname modeMean-methods
 #'@aliases modeMean modeMean,Tensor-method
 #'@param tnsr the Tensor instance
 #'@param m the index of the mode to average across
-#'@return K-1 Tensor, where \code{K = getNumModes(x)}
-#'@seealso \code{\link{modeSum}} and \code{\link{sweep}}
+#'@param drop whether or not mode m should be dropped
+#'@return K-1 or K Tensor, where \code{K = x@@num_modes}
+#'@seealso \code{\link{modeSum}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'modeMean(tnsr,1)
+#'tnsr <- rand_tensor()
+#'modeMean(tnsr,1,drop=TRUE)
 setGeneric(name="modeMean",
-def=function(tnsr,m){standardGeneric("modeMean")})
+def=function(tnsr,m,drop){standardGeneric("modeMean")})
 
 #'Tensor Frobenius Norm
 #'
@@ -256,7 +209,7 @@ def=function(tnsr,m){standardGeneric("modeMean")})
 #'@param tnsr the Tensor instance
 #'@return numeric Frobenius norm of \code{x}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'fnorm(tnsr)
 setGeneric(name="fnorm",
 def=function(tnsr){standardGeneric("fnorm")})
@@ -275,8 +228,8 @@ def=function(tnsr){standardGeneric("fnorm")})
 #'@param tnsr2 second Tensor instance
 #'@return inner product between \code{x1} and \code{x2}
 #'@examples
-#'tnsr1 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'tnsr2 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr1 <- rand_tensor()
+#'tnsr2 <- rand_tensor()
 #'innerProd(tnsr1,tnsr2)
 setGeneric(name="innerProd",
 def=function(tnsr1,tnsr2){standardGeneric("innerProd")})
@@ -313,7 +266,7 @@ options(warn=-1)
 
 #'Mode Getter for Tensor
 #'
-#'Return the vector of modes from a tensor. Safer than accessing the slot directly.
+#'Return the vector of modes from a tensor
 #'
 #'@name dim-methods
 #'@details \code{dim(tnsr)}
@@ -323,9 +276,8 @@ options(warn=-1)
 #'@rdname dim-methods
 #'@param tnsr the Tensor instance
 #'@return an integer vector of the modes associated with \code{x}
-#'@seealso \code{\link{getModes}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'dim(tnsr)
 setMethod(f="dim",
 signature="Tensor",
@@ -347,7 +299,7 @@ definition=function(tnsr){
 #'@param ... additional parameters to be passed into show()
 #'@seealso \code{\link{print}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'tnsr
 setMethod(f="show",
 signature="Tensor",
@@ -372,7 +324,7 @@ definition=function(x){
 #'@param ... additional parameters to be passed into print()
 #'@seealso \code{\link{show}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'print(tnsr)
 setMethod(f="print",
 signature="Tensor",
@@ -394,7 +346,7 @@ definition=function(x,...){
 #'@param ... additional parameters to be passed into head()
 #'@seealso \code{\link{tail-methods}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'head(tnsr)
 setMethod(f="head",
 signature="Tensor",
@@ -416,7 +368,7 @@ definition=function(x,...){
 #'@param ... additional parameters to be passed into tail()
 #'@seealso \code{\link{head-methods}}
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'tail(tnsr)
 setMethod(f="tail",
 signature="Tensor",
@@ -424,53 +376,42 @@ definition=function(x,...){
 	tail(x@data,...)
 })
 
-#'Sweep for Tensor
+#'Extract or Replace Subtensors
 #'
-#'Extend sweep for Tensor
-#'
-#'@name sweep-methods
-#'@details \code{sweep(x,m=NULL,stats=NULL,func=NULL,...)}
-#'@export
-#'@aliases sweep,Tensor-method
-#'@docType methods
-#'@rdname sweep-methods
-#'@param x the Tensor instance
-#'@param ... additional parameters to be passed into sweep()
-#'@seealso \code{\link{modeSum}} and \code{\link{modeMean}}
-#'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'sweep(tnsr,m=c(2,3),stat=1,func='-')
-#'sweep(tnsr,m=1,stat=10,func='/')
-setMethod("sweep", signature="Tensor",
-definition=function(x,m=NULL,stats=NULL,func=NULL,...){
-	if(is.null(m)) stop("must specify mode m")
-	as.tensor(sweep(x@data,MARGIN=m,STATS=stats,FUN=func,...))
-})
-
-#'Extract for Tensor
-#'
-#'Extends '[' for Tensor class. Works exactly as it would for the base 'array' class.
+#'Extends '[' and '[<-' from the base array class for the Tensor class. Works exactly as it would for the base 'array' class.
 #'
 #'@name [-methods
 #'@details \code{x[i,j,...,drop=TRUE]}
 #'@export
-#'@aliases [,Tensor-method extract,Tensor-method
+#'@aliases [,Tensor-method extract,Tensor-method [<-,Tensor-method
 #'@docType methods
 #'@rdname extract-methods
 #'@param x Tensor to be subset
 #'@param i,j,... indices that specify the extents of the sub-tensor
 #'@param drop whether or not to reduce the number of modes to exclude those that have '1' as the mode
-#'@return subTensor of class Tensor
+#'@param value either vector, matrix, or array that will replace the subtensor
+#'@return an object of class Tensor
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'tnsr[1,2,3]
 #'tnsr[3,1,]
 #'tnsr[,,5]
 #'tnsr[,,5,drop=FALSE]
+#'
+#'tnsr[1,2,3] <- 3; tnsr[1,2,3]
+#'tnsr[3,1,] <- rep(0,5); tnsr[3,1,]
+#'tnsr[,2,] <- matrix(0,nrow=3,ncol=5); tnsr[,2,]
 setMethod("[", signature="Tensor",
 definition=function(x,i,j,...,drop=TRUE){
 	if(!drop) as.tensor(`[`(x@data,i,j,drop=FALSE,...),drop=drop)
 	else as.tensor(`[`(x@data,i,j,...))
+})
+
+#'@aliases [,Tensor-method extract,Tensor-method [<-,Tensor-method
+#'@rdname extract-methods
+setMethod("[<-", signature="Tensor",
+definition=function(x,i,j,...,value){
+	as.tensor(`[<-`(x@data,i,j,...,value=value))
 })
 
 #'Tensor Transpose
@@ -487,7 +428,7 @@ definition=function(x,i,j,...,drop=TRUE){
 #'@return tensor transpose of \code{x}
 #'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
 #'identical(t(tnsr)@@data[,,1],t(tnsr@@data[,,1]))
 #'identical(t(tnsr)@@data[,,2],t(tnsr@@data[,,5]))
 #'identical(t(t(tnsr)),tnsr)
@@ -495,7 +436,7 @@ setMethod("t",signature="Tensor",
 definition=function(tnsr){
 	if(tnsr@num_modes!=3) stop("Tensor Transpose currently only implemented for 3d Tensors")
 	modes <- tnsr@modes
-	new_arr <- array(apply(tnsr@data[,,c(1L,modes[3]:2L)],MARGIN=3,FUN=t),dim=modes[c(2,1,3)])
+	new_arr <- array(apply(tnsr@data[,,c(1L,modes[3]:2L),drop=FALSE],MARGIN=3,FUN=t),dim=modes[c(2,1,3)])
 	as.tensor(new_arr)
 })
 
@@ -513,8 +454,8 @@ definition=function(tnsr){
 #'@aliases Ops,array,Tensor-method
 #'@aliases Ops,numeric,Tensor-method
 #'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'tnsr2 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'tnsr <- rand_tensor()
+#'tnsr2 <- rand_tensor()
 #'tnsrsum <- tnsr + tnsr2
 #'tnsrdiff <- tnsr - tnsr2
 #'tnsrelemprod <- tnsr * tnsr2
@@ -560,54 +501,32 @@ definition=function(e1,e2){
 	e2
 })
 
-#'@rdname getModes-methods
-#'@aliases getModes,Tensor-method
-setMethod(f="getModes",
-signature="Tensor",
-definition=function(tnsr){
-	tnsr@modes
-})
-
-#'@rdname getNumModes-methods
-#'@aliases getNumModes,Tensor-method
-setMethod(f="getNumModes",
-signature="Tensor",
-definition=function(tnsr){
-	tnsr@num_modes
-})
-
-#'@rdname getData-methods
-#'@aliases getData,Tensor-method
-setMethod(f="getData",
-signature="Tensor",
-definition=function(tnsr){
-	if(tnsr@num_modes==1) return(as.vector(tnsr@data))
-	return(tnsr@data)
-})
-
 #'@rdname modeSum-methods
 #'@aliases modeSum,Tensor-method
 setMethod("modeSum",signature="Tensor",
-definition=function(tnsr,m=NULL){
+definition=function(tnsr,m=NULL,drop=FALSE){
 	if(is.null(m)) stop("must specify mode m")
 	num_modes <- tnsr@num_modes
 	if(m<1||m>num_modes) stop("m out of bounds")
 	perm <- c(m,(1L:num_modes)[-m])
-	arr <- colSums(aperm(tnsr@data,perm),dims=1L)
-	as.tensor(arr)
+	modes <- tnsr@modes
+	newmodes <- modes; newmodes[m]<-1
+	arr <- array(colSums(aperm(tnsr@data,perm),dims=1L),dim=newmodes)
+	as.tensor(arr,drop=drop)
 })
 
 #'@rdname modeMean-methods
 #'@aliases modeMean,Tensor-method
 setMethod("modeMean",signature="Tensor",
-definition=function(tnsr,m=NULL){
+definition=function(tnsr,m=NULL,drop=FALSE){
 	if(is.null(m)) stop("must specify mode m")
 	num_modes <- tnsr@num_modes
 	if(m<1||m>num_modes) stop("m out of bounds")
 	perm <- c(m,(1L:num_modes)[-m])
-	arr <- colSums(aperm(tnsr@data,perm),dims=1L)
 	modes <- tnsr@modes
-	as.tensor(arr/modes[m])
+	newmodes <- modes; newmodes[m]<-1
+	arr <- array(colSums(aperm(tnsr@data,perm),dims=1L),dim=newmodes)
+	as.tensor(arr/modes[m],drop=drop)
 })
 
 #'@rdname fnorm-methods
@@ -675,7 +594,6 @@ options(warn=1)
 
 ###Creation of Tensor from an array/matrix/vector
 
-#'
 #'Tensor Conversion
 #'
 #'Create a \code{\link{Tensor-class}} object from an \code{array}, \code{matrix}, or \code{vector}.
@@ -712,3 +630,97 @@ as.tensor <- function(x,drop=FALSE){
 	}
 new("Tensor",num_modes,modes,data=array(x,dim=modes))
 }
+
+
+#####V1.0.1 Addition
+
+#'Image of 3-Tensor Slices
+#'
+#'Calls \code{image} on the multiple slices of the 3-Tensors to provide more conveinence than calling \code{image} on \code{tnsr@@data}. Need to specify which mode and the range of index along that mode.
+#'
+#'@docType methods
+#'@name image-methods
+#'@rdname image-methods
+#'@aliases image,Tensor-method
+#'@details \code{image(x,m=NULL,indices=NULL,...)}
+#'@export
+#'@param x the Tensor instance
+#'@param m the mode to slice along
+#'@param indices the range of indices to be plotted, by default all indices along mode \code{m}
+#'@examples
+#'tnsr <- rand_tensor(c(3,4,5))
+#'#image(tnsr,m=3,indices=c(2:4))
+#'#image(tnsr,m=2)
+setMethod("image",signature="Tensor",
+definition = function(x,m=NULL,indices=NULL,...){
+  modes <- x@modes
+  numModes <-x@num_modes
+  stopifnot((numModes==3)||(numModes==2))
+  if(numModes==2){
+  	image(x@data,...)
+  }
+  else{
+  stopifnot(m > 0 || m <= 3)
+  if(is.null(indices)) indices <- seq(modes[m])
+  x <- x@data
+  par(mfrow=c(1, length(indices)), mar=c(0.1,0.1,3,0.1))
+  if (m==1){
+  for (i in 1:length(indices)) image(x[indices[i],,], main=paste(c(indices[i]," of ",modes[m])),...)	
+  }else if(m==2){
+  for (i in 1:length(indices)) image(x[,indices[i],], main=paste(c(indices[i]," of ",modes[m])),...)  	
+  }else{
+  for (i in 1:length(indices)) image(x[,,indices[i]], main=paste(c(indices[i]," of ",modes[m])),...)
+  }
+  }		  	
+})
+
+#'Mode Permutation for Tensor
+#'
+#'Overloads \code{aperm} for Tensor class for convenience. 
+#'
+#'@docType methods
+#'@name tperm-methods
+#'@rdname tperm-methods
+#'@aliases tperm,Tensor-method
+#'@details \code{tperm(x,perm=NULL,...)}
+#'@export
+#'@param x the Tensor instance
+#'@param perm the new permutation of the current modes
+#'@examples
+#'tnsr <- rand_tensor(c(3,4,5))
+#'dim(tperm(tnsr,perm=c(2,1,3)))
+#'dim(tperm(tnsr,perm=c(1,3,2)))
+setGeneric(name="tperm",
+def=function(tnsr,...){standardGeneric("tperm")})
+
+#'@rdname tperm-methods
+#'@aliases tperm,Tensor-method
+setMethod("tperm",signature="Tensor",
+definition=function(tnsr,...){
+	as.tensor(aperm(tnsr@data,...))
+})
+
+#'@rdname unfold-methods
+#'@aliases unfold,Tensor-method vec,Tensor-method
+setGeneric(name="vec",def=function(tnsr,...){standardGeneric("vec")})
+
+#'@rdname unfold-methods
+#'@aliases unfold,Tensor-method vec,Tensor-method
+setMethod("vec",signature="Tensor",
+definition=function(tnsr){
+	as.tensor(as.vector(tnsr@data))
+})
+
+#'@rdname cs_unfold-methods
+#'@aliases cs_unfold,Tensor-method matvec,Tensor-method
+setGeneric(name="matvec",
+           def=function(tnsr,...){standardGeneric("matvec")})
+
+#'@rdname cs_unfold-methods
+#'@aliases cs_unfold,Tensor-method matvec,Tensor-method
+setMethod('matvec',signature="Tensor",
+          definition=function(tnsr){
+          num_modes <- tnsr@num_modes
+          stopifnot(num_modes==3)
+          unfold(tnsr,rs=c(1,3),cs=2)
+          })

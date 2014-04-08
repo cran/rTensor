@@ -211,7 +211,9 @@ t_mult <- function(x,y){
 	#multiply the faces (this is terribad! TO-DO: think of better way!)
 	fft_ret <- array(0,dim=c(modes_x[1],modes_y[2],n3))
 	for(i in 1:n3){
-		fft_ret[,,i]<-fft_x[,,i]%*%fft_y[,,i]
+		first <- fft_x[,,i,drop=FALSE]
+		second <- fft_y[,,i,drop=FALSE]
+		fft_ret[,,i]<-matrix(first,nrow=dim(first)[1])%*%matrix(second,,nrow=dim(second)[1])
 	}
 	#ifft and return as Tensor
 	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
@@ -222,7 +224,7 @@ t_mult <- function(x,y){
 
 #'Tensor with Random Entries
 #'
-#'Generate a Tensor with specified modes with iid uniform(0,1) entries.
+#'Generate a Tensor with specified modes with iid normal(0,1) entries.
 #'@export
 #'@name rand_tensor
 #'@rdname rand_tensor
@@ -236,7 +238,7 @@ t_mult <- function(x,y){
 #'rand_tensor(c(4,4,4))
 #'rand_tensor(c(10,2,1),TRUE)
 rand_tensor <- function(modes=c(3,4,5),drop=FALSE){
-	as.tensor(array(runif(prod(modes)), dim=modes),drop=drop)
+	as.tensor(array(rnorm(prod(modes)), dim=modes),drop=drop)
 }
 
 ###Matrix Foldings

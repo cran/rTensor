@@ -15,12 +15,9 @@
   decomposed into \code{U, S, V} via \code{\link{t_svd}}.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(10L,10L,100L),data=runif(10000))
+tnsr <- rand_tensor(c(10,10,10))
 tsvdD <- t_svd(tnsr)
 1 - fnorm(t_svd_reconstruct(tsvdD)-tnsr)/fnorm(tnsr)
-smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-smalltsvdD <- t_svd(smalltnsr)
-1 - fnorm(t_svd_reconstruct(smalltsvdD)-smalltnsr)/fnorm(smalltnsr)
 }
 \seealso{
   \code{\link{t_svd}}

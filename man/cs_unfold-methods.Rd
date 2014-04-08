@@ -3,6 +3,8 @@
 \alias{cs_unfold}
 \alias{cs_unfold,Tensor-method}
 \alias{cs_unfold-methods}
+\alias{matvec}
+\alias{matvec,Tensor-method}
 \title{Tensor Column Space Unfolding}
 \arguments{
   \item{tnsr}{the Tensor instance}
@@ -11,21 +13,22 @@
   space}
 }
 \value{
-  matrix with \code{prod(getModes(x)[-m])} rows and
-  \code{getModes(x)[m]} columns
+  matrix with \code{prod(x@modes[-m])} rows and
+  \code{x@modes[m]} columns
 }
 \description{
   Unfolding of a tensor by mapping the mode 'm' onto the
   column space, and all other modes onto the row space. For
-  3-tensors, this is also known as the 'MatVec' operation.
-  This is the prevalent unfolding for TSVD and T-MULT based
-  on block circulant matrices.
+  3-tensors, this is also known as the 'matvec' operation
+  when \code{m=2}. In fact, we provide \code{matvec} for
+  convenience as well. This is the prevalent unfolding for
+  T-SVD and T-MULT based on block circulant matrices.
 }
 \details{
   \code{cs_unfold(tnsr,m=NULL)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 matT1<-cs_unfold(tnsr,m=3)
 }
 \references{

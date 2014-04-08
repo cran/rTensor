@@ -8,22 +8,24 @@
   \item{tnsr}{the Tensor instance}
 
   \item{m}{the index of the mode to sum across}
+
+  \item{drop}{whether or not mode m should be dropped}
 }
 \value{
-  K-1 tensor, where \code{K = getNumModes(x)}
+  K-1 or K tensor, where \code{K = x@num_modes}
 }
 \description{
   Given a mode for a K-tensor, this returns the K-1 tensor
   resulting from summing across that particular mode.
 }
 \details{
-  \code{modeSum(tnsr,m=NULL)}
+  \code{modeSum(tnsr,m=NULL,drop=FALSE)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-modeSum(tnsr,3)
+tnsr <- rand_tensor()
+modeSum(tnsr,3,drop=TRUE)
 }
 \seealso{
-  \code{\link{modeMean}} and \code{\link{sweep}}
+  \code{\link{modeMean}}
 }
 

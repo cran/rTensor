@@ -12,8 +12,8 @@
   vectors that are conformable (have the same modes).
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-tnsr2 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
+tnsr2 <- rand_tensor()
 tnsrsum <- tnsr + tnsr2
 tnsrdiff <- tnsr - tnsr2
 tnsrelemprod <- tnsr * tnsr2

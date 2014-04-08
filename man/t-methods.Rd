@@ -17,7 +17,7 @@
   \code{t(tnsr)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 identical(t(tnsr)@data[,,1],t(tnsr@data[,,1]))
 identical(t(tnsr)@data[,,2],t(tnsr@data[,,5]))
 identical(t(t(tnsr)),tnsr)

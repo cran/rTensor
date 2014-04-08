@@ -15,7 +15,7 @@
 }
 \description{
   Generate a Tensor with specified modes with iid
-  uniform(0,1) entries.
+  normal(0,1) entries.
 }
 \note{
   Default \code{rand_tensor()} generates a 3-Tensor with

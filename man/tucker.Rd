@@ -23,9 +23,13 @@
   of the matrices given by \code{ranks}}
   \item{\code{conv}}{whether or not \code{resid} <
   \code{tol} by the last iteration}
-  \item{\code{norm_percent}}{the percent of Frobenius norm
-  explained by the approximation} \item{\code{resid}}{the
-  relative error in Frobenius norm.} }
+  \item{\code{est}}{estimate of \code{tnsr} after
+  compression} \item{\code{norm_percent}}{the percent of
+  Frobenius norm explained by the approximation}
+  \item{\code{fnorm_resid}}{the Frobenius norm of the error
+  \code{fnorm(est-tnsr)}} \item{\code{all_resids}}{vector
+  containing the Frobenius norm of error for all the
+  iterations} }
 }
 \description{
   The Tucker decomposition of a tensor. Approximates a
@@ -34,7 +38,7 @@
   matrices. If there is no truncation in one of the modes,
   then this is the same as the MPCA, \code{\link{mpca}}. If
   there is no truncation in all the modes (i.e. \code{ranks
-  = getModes(tnsr)}), then this is the same as the HOSVD,
+  = tnsr@modes}), then this is the same as the HOSVD,
   \code{\link{hosvd}}. This is an iterative algorithm, with
   two possible stopping conditions: either relative error
   in Frobenius norm has gotten below \code{tol}, or the
@@ -51,20 +55,14 @@
 }
 \note{
   The length of \code{ranks} must match
-  \code{getNumModes(tnsr)}.
+  \code{tnsr@num_modes}.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+tnsr <- rand_tensor(c(6,7,8))
 tuckerD <- tucker(tnsr,ranks=c(3,3,4))
 tuckerD$conv
 tuckerD$norm_percent
-plot(tuckerD$resid/fnorm(tnsr))
-#####
-smalltnsr <- new("Tensor",3L,c(10L,10L,10L),data=runif(1000))
-smalltuckerD <- tucker(smalltnsr,ranks=c(5,6,7))
-smalltuckerD$conv
-smalltuckerD$norm_percent
-plot(smalltuckerD$resid)
+plot(tuckerD$all_resids)
 }
 \references{
   T. Kolda, B. Bader, "Tensor decomposition and

@@ -19,8 +19,8 @@
   \code{innerProd(tnsr1,tnsr2)}
 }
 \examples{
-tnsr1 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-tnsr2 <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr1 <- rand_tensor()
+tnsr2 <- rand_tensor()
 innerProd(tnsr1,tnsr2)
 }
 

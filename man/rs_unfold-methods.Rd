@@ -10,8 +10,8 @@
   \item{m}{the index of the mode to map onto the row space}
 }
 \value{
-  atrix with \code{getModes(x)[m]} rows and
-  \code{prod(getModes(x)[-m])} columns
+  atrix with \code{x@modes[m]} rows and
+  \code{prod(x@modes[-m])} columns
 }
 \description{
   Unfolding of a tensor by mapping the mode 'm' onto the
@@ -24,7 +24,7 @@
   \code{rs_unfold(tnsr,m=NULL)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 matT2<-rs_unfold(tnsr,m=2)
 }
 \references{

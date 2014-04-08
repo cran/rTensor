@@ -30,7 +30,7 @@
   components during the FFT and inverse FFT.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(10L,10L,100L),data=runif(10000))
+tnsr <- rand_tensor()
 tsvdD <- t_svd(tnsr)
 }
 \references{

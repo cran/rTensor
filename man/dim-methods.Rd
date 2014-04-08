@@ -10,17 +10,13 @@
   an integer vector of the modes associated with \code{x}
 }
 \description{
-  Return the vector of modes from a tensor. Safer than
-  accessing the slot directly.
+  Return the vector of modes from a tensor
 }
 \details{
   \code{dim(tnsr)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 dim(tnsr)
-}
-\seealso{
-  \code{\link{getModes}}
 }
 

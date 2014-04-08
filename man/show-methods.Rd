@@ -16,7 +16,7 @@
   \code{show(x)}
 }
 \examples{
-tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+tnsr <- rand_tensor()
 tnsr
 }
 \seealso{

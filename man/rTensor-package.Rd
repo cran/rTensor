@@ -39,5 +39,5 @@ rTensor also provides a set functions for tensors multiplication: \describe{
 For more information on any of the functions, please consult the individual man pages.
 }
 \author{
-  James Li \email{jamesyili@gmail.com}, Jacob Bien, and Marty Wells
+  James Li \email{jamesyili@gmail.com}, Jacob Bien, and Martin T. Wells
 }

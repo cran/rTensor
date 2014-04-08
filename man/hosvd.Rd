@@ -8,15 +8,17 @@
   \item{tnsr}{Tensor with K modes}
 
   \item{ranks}{a vector of desired modes in the output core
-  tensor, default is \code{getModes(tnsr)}}
+  tensor, default is \code{tnsr@modes}}
 }
 \value{
   a list containing the following:\describe{
   \item{\code{Z}}{core tensor with modes speficied by
   \code{ranks}} \item{\code{U}}{a list of orthogonal
-  matrices, one for each mode} \item{\code{resid}}{the
-  relative error in Frobenius norm - if there was no
-  truncation, then this is O(mach_eps). } }
+  matrices, one for each mode} \item{\code{est}}{estimate
+  of \code{tnsr} after compression}
+  \item{\code{fnorm_resid}}{the Frobenius norm of the error
+  \code{fnorm(est-tnsr)} - if there was no truncation, then
+  this is O(mach_eps) } }
 }
 \description{
   Higher-order SVD of a K-Tensor. Write the K-Tensor as a
@@ -34,14 +36,14 @@
 }
 \note{
   The length of \code{ranks} must match
-  \code{getNumModes(tnsr)}.
+  \code{tnsr@num_modes}.
 }
 \examples{
-tnsr <- new("Tensor",3L,c(6L,7L,8L),data=runif(336))
+tnsr <- rand_tensor(c(6,7,8))
 hosvdD <-hosvd(tnsr)
-hosvdD$resid
+hosvdD$fnorm_resid
 hosvdD2 <-hosvd(tnsr,ranks=c(3,3,4))
-hosvdD2$resid
+hosvdD2$fnorm_resid
 }
 \references{
   L. Lathauwer, B.Moor, J. Vanderwalle "A multilinear
