@@ -32,8 +32,8 @@ rTensor also provides a set functions for tensors multiplication: \describe{
 	\item{\code{\link{khatri_rao}}}{Computes the Khatri-Rao product of two matrices}
 	\item{\code{\link{khatri_rao_list}}}{Computes the Khatri-Rao product of a list of matrices}
 	\item{\code{\link{fold}}}{General folding of a matrix into a tensor}
-	\item{\code{\link{rs_fold}}}{Row space folding of a matrix into a tensor}
-	\item{\code{\link{cs_fold}}}{Column space folding of a matrix into a tensor}
+	\item{\code{\link{k_fold}}}{Inverse operation for \code{\link{k_unfold}}}
+	\item{\code{\link{unmatvec}}}{Inverse operation for \code{\link{matvec}}}
 }
 
 For more information on any of the functions, please consult the individual man pages.

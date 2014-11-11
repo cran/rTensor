@@ -30,7 +30,6 @@ hosvd <- function(tnsr,ranks=NULL){
 	num_modes <- tnsr@num_modes
 	#no truncation if ranks not provided
 	if(is.null(ranks)){
-		cat("!ranks not provided so left singular matrices will not be truncated.\n")
 		ranks <- tnsr@modes
 	}
 	#progress bar
@@ -38,7 +37,8 @@ hosvd <- function(tnsr,ranks=NULL){
 	#loops through and performs SVD on mode-m matricization of tnsr
 	U_list <- vector("list",num_modes)
 	for(m in 1:num_modes){
-		U_list[[m]] <- (svd(rs_unfold(tnsr,m=m)@data)$u)[,1:ranks[m]]
+		temp_mat <- rs_unfold(tnsr,m=m)@data
+		U_list[[m]] <- svd(temp_mat,nu=ranks[m])$u
 		setTxtProgressBar(pb,m)
 	}
 	close(pb)
@@ -134,7 +134,7 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	#end of main loop
 	#put together return list, and returns
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
-	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
+	norm_percent<- (1-(tail(fnorm_resid,1)/tnsr_norm))*100
 	invisible(list(lambdas=lambdas, U=U_list, conv=converged, est=est, norm_percent=norm_percent, fnorm_resid = tail(fnorm_resid,1),all_resids=fnorm_resid))
 }
 
@@ -175,7 +175,8 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	num_modes <- tnsr@num_modes
 	U_list <- vector("list",num_modes)
 	for(m in 1:num_modes){
-		U_list[[m]] <- (svd(rs_unfold(tnsr,m=m)@data)$u)[,1:ranks[m]]
+		temp_mat <- rs_unfold(tnsr,m=m)@data
+		U_list[[m]] <- svd(temp_mat,nu=ranks[m])$u
 	}
 	tnsr_norm <- fnorm(tnsr)
 	curr_iter <- 1
@@ -202,7 +203,7 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 			X <- ttl(tnsr,lapply(U_list[-m],t),ms=modes_seq[-m])
 			#truncated SVD of X
 			#U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m],nv=prod(modes[-m]))$u)[,1:ranks[m]]
-			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u)[,1:ranks[m]]
+			U_list[[m]] <- svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u
 		}
 		#compute core tensor Z
 		Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)
@@ -219,7 +220,7 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	#end of main loop
 	#put together return list, and returns
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
-	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
+	norm_percent<-(1-(tail(fnorm_resid,1)/tnsr_norm))*100
 	est <- ttl(Z,U_list,ms=1:num_modes)
 	invisible(list(Z=Z, U=U_list, conv=converged, est=est, norm_percent = norm_percent, fnorm_resid=tail(fnorm_resid,1), all_resids=fnorm_resid))
 }
@@ -267,7 +268,7 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	for(m in 1:(num_modes-1)){
 		unfolded_mat <- rs_unfold(tnsr,m=m)@data
 		mode_m_cov <- unfolded_mat%*%t(unfolded_mat)
-		U_list[[m]] <- (svd(mode_m_cov)$u)[,1:ranks[m]]
+		U_list[[m]] <- svd(mode_m_cov, nu=ranks[m])$u
 	}
 	Z_ext <- ttl(tnsr,lapply(U_list[-num_modes],t),ms=1:(num_modes-1))
 	tnsr_norm <- fnorm(tnsr)
@@ -294,7 +295,7 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 			#extended core Z minus mode m
 			X <- ttl(tnsr,lapply(U_list[-c(m,num_modes)],t),ms=modes_seq[-m])
 			#truncated SVD of X
-			U_list[[m]] <- (svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u)[,1:ranks[m]]
+			U_list[[m]] <- svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u
 		}
 		#compute core tensor Z_ext
 		Z_ext <- ttm(X,mat=t(U_list[[num_modes-1]]),m=num_modes-1)
@@ -311,7 +312,7 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	#put together return list, and returns
 	est <- ttl(Z_ext,U_list[-num_modes],ms=1:(num_modes-1))
 	fnorm_resid <- fnorm_resid[fnorm_resid!=0]
-	norm_percent<-1-(tail(fnorm_resid,1)/tnsr_norm)
+	norm_percent<-(1-(tail(fnorm_resid,1)/tnsr_norm))*100
 	invisible(list(Z_ext=Z_ext, U=U_list, conv=converged, est=est, norm_percent = norm_percent, fnorm_resid=tail(fnorm_resid,1), all_resids=fnorm_resid))
 }
 
@@ -377,7 +378,7 @@ pvd <- function(tnsr,uranks=NULL,wranks=NULL,a=NULL,b=NULL){
 	est <- as.tensor(est)
 	fnorm_resid <- fnorm(est-tnsr)	
 	setTxtProgressBar(pb,n+3)
-	norm_percent<-1-(fnorm_resid/fnorm(tnsr))
+	norm_percent<-(1-(fnorm_resid/fnorm(tnsr)))*100
 	invisible(list(P=P,D=D,V=V2,est=est,norm_percent=norm_percent,fnorm_resid=fnorm_resid))
 }
 
@@ -491,7 +492,7 @@ t_svd_reconstruct <- function(L){
 		est <- est + t_mult(t_mult(U[,i,,drop=FALSE],S[i,i,,drop=FALSE]),t(V[,i,,drop=FALSE]))
 	}
 	resid <- fnorm(est-tnsr)
-	invisible(list(est=est, fnorm_resid = resid, norm_percent = 1-resid/fnorm(tnsr)))
+	invisible(list(est=est, fnorm_resid = resid, norm_percent = (1-resid/fnorm(tnsr))*100))
 }
 
 ###t-compress2 (Not Supported)
@@ -513,5 +514,5 @@ t_svd_reconstruct <- function(L){
 		}	
 	}
 	resid <- fnorm(tnsr - est)
-	invisible(list(core = as.tensor(core), est=est, fnorm_resid = resid, norm_percent = 1-resid/fnorm(tnsr)))
+	invisible(list(core = as.tensor(core), est=est, fnorm_resid = resid, norm_percent = (1-resid/fnorm(tnsr))*100))
 }

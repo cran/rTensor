@@ -245,25 +245,27 @@ rand_tensor <- function(modes=c(3,4,5),drop=FALSE){
 
 #'General Folding of Matrix
 #'
-#'General folding of a matrix into a Tensor. This is designed to be the inverse function to \code{\link{unfold-methods}}, with the same ordering of the indices. This amounts to following: if we were to unfold a Tensor using a set of \code{rs} and \code{cs}, then we can fold the resulting matrix back into the original Tensor using the same \code{rs} and \code{cs}. See Kolda and Bader (2009) for more details.
+#'General folding of a matrix into a Tensor. This is designed to be the inverse function to \code{\link{unfold-methods}}, with the same ordering of the indices. This amounts to following: if we were to unfold a Tensor using a set of \code{row_idx} and \code{col_idx}, then we can fold the resulting matrix back into the original Tensor using the same \code{row_idx} and \code{col_idx}.
 #'@export
 #'@details This function uses \code{aperm} as the primary workhorse.
 #'@name fold
 #'@rdname fold
 #'@aliases fold
 #'@param mat matrix to be folded into a Tensor
-#'@param rs the indices of the modes that are mapped onto the row space
-#'@param cs the indices of the modes that are mapped onto the column space
+#'@param row_idx the indices of the modes that are mapped onto the row space
+#'@param col_idx the indices of the modes that are mapped onto the column space
 #'@param modes the modes of the output Tensor
 #'@return Tensor object with modes given by \code{modes}
-#'@seealso \code{\link{unfold-methods}}, \code{\link{rs_fold}}, \code{\link{cs_fold}}
+#'@seealso \code{\link{unfold-methods}}, \code{\link{k_fold}}, \code{\link{unmatvec}}
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@examples
 #'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'matT3<-unfold(tnsr,rs=2,cs=c(3,1))
-#'identical(fold(matT3,rs=2,cs=c(3,1),modes=c(3,4,5)),tnsr)
-fold <- function(mat, rs = NULL, cs = NULL, modes=NULL){
+#'matT3<-unfold(tnsr,row_idx=2,col_idx=c(3,1))
+#'identical(fold(matT3,row_idx=2,col_idx=c(3,1),modes=c(3,4,5)),tnsr)
+fold <- function(mat, row_idx = NULL, col_idx = NULL, modes=NULL){
 	#checks
+	rs <- row_idx
+	cs <- col_idx
 	if(is.null(rs)||is.null(cs)) stop("row space and col space indices must be specified")
 	if(is.null(modes)) stop("Tensor modes must be specified")
 	if(!is(mat,"Tensor")){
@@ -281,58 +283,94 @@ fold <- function(mat, rs = NULL, cs = NULL, modes=NULL){
 	as.tensor(aperm(array(mat,dim=c(modes[rs],modes[cs])),iperm))
 }
 
-#'Row Space Folding of Matrix
+#'k-mode Folding of Matrix
 #'
-#'Row space folding of a matrix into a Tensor. This is the inverse funtion to \code{rs_unfold} in the m mode. In particular, \code{rs_fold(rs_unfold(tnsr, m),m,getModes(tnsr))} will result in the original Tensor. For a full account of matrix folding/unfolding operations, consult Kolda and Bader (2009).
+#'k-mode folding of a matrix into a Tensor. This is the inverse funtion to \code{k_unfold} in the m mode. In particular, \code{k_fold(k_unfold(tnsr, m),m,getModes(tnsr))} will result in the original Tensor.
 #'@export
 #'@details This is a wrapper function to \code{\link{fold}}.
-#'@name rs_fold
-#'@rdname rs_fold
-#'@aliases rs_fold
+#'@name k_fold
+#'@rdname k_fold
+#'@aliases k_fold
 #'@param mat matrix to be folded into a Tensor
-#'@param m the index of the mode that is mapped onto the row space
+#'@param m the index of the mode that is mapped onto the row indices
 #'@param modes the modes of the output Tensor
 #'@return Tensor object with modes given by \code{modes}
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
-#'@seealso \code{\link{rs_unfold-methods}}, \code{\link{fold}}, \code{\link{cs_fold}}
+#'@seealso \code{\link{k_unfold-methods}}, \code{\link{fold}}, \code{\link{unmatvec}}
 #'@examples
 #'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'matT2<-rs_unfold(tnsr,m=2)
-#'identical(rs_fold(matT2,m=2,modes=c(3,4,5)),tnsr)
+#'matT2<-k_unfold(tnsr,m=2)
+#'identical(k_fold(matT2,m=2,modes=c(3,4,5)),tnsr)
+k_fold <- function(mat,m=NULL,modes=NULL){
+	if(is.null(m)) stop("mode m must be specified")
+	if(is.null(modes)) stop("Tensor modes must be specified")
+	num_modes <- length(modes)
+	rs <- m
+	cs <- (1:num_modes)[-m]
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)
+}
+
+#'Unmatvec Folding of Matrix
+#'
+#'The inverse operation to \code{\link{matvec-methods}}, turning a matrix into a Tensor. For a full account of matrix folding/unfolding operations, consult Kolda and Bader (2009).
+#'@export
+#'@name unmatvec
+#'@rdname unmatvec
+#'@aliases unmatvec
+#'@param mat matrix to be folded into a Tensor
+#'@param modes the modes of the output Tensor
+#'@return Tensor object with modes given by \code{modes}
+#'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
+#'@seealso \code{\link{matvec-methods}}, \code{\link{fold}}, \code{\link{k_fold}}
+#'@examples
+#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
+#'matT1<-matvec(tnsr)
+#'identical(unmatvec(matT1,modes=c(3,4,5)),tnsr)
+unmatvec <- function(mat,modes=NULL){
+	if(is.null(modes)) stop("Tensor modes must be specified")
+	num_modes <- length(modes)
+	cs <- 2
+	rs <- (1:num_modes)[-2]
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)	
+}
+
+#'Row Space Folding of Matrix
+#'
+#'DEPRECATED. Please see \code{\link{k_fold}}.
+#'@export
+#'@param mat matrix to be folded
+#'@param m the mode corresponding to rs_unfold
+#'@param modes the original modes of the tensor
+#'@name rs_fold
+#'@rdname rs_fold
+#'@aliases rs_fold
 rs_fold <- function(mat,m=NULL,modes=NULL){
 	if(is.null(m)) stop("mode m must be specified")
 	if(is.null(modes)) stop("Tensor modes must be specified")
 	num_modes <- length(modes)
 	rs <- m
 	cs <- (1:num_modes)[-m]
-	fold(mat,rs=rs,cs=cs,modes=modes)
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)
 }
+
 
 #'Column Space Folding of Matrix
 #'
-#'Column space folding of a matrix into a Tensor. This is the inverse funtion to \code{cs_unfold} in the m mode. In particular, \code{cs_fold(cs_unfold(tnsr, m),m,getModes(tnsr))} will result in the original Tensor. For a full account of matrix folding/unfolding operations, consult Kolda and Bader (2009).
+#'DEPRECATED. Please see \code{\link{unmatvec}}
 #'@export
-#'@details This is a wrapper function to \code{\link{fold}}.
+#'@param mat matrix to be folded
+#'@param m the mode corresponding to cs_unfold
+#'@param modes the original modes of the tensor
 #'@name cs_fold
 #'@rdname cs_fold
 #'@aliases cs_fold
-#'@param mat matrix to be folded into a Tensor
-#'@param m the index of the mode that is mapped onto the column space
-#'@param modes the modes of the output Tensor
-#'@return Tensor object with modes given by \code{modes}
-#'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
-#'@seealso \code{\link{cs_unfold-methods}}, \code{\link{fold}}, \code{\link{rs_fold}}
-#'@examples
-#'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'matT1<-cs_unfold(tnsr,m=3)
-#'identical(cs_fold(matT1,m=3,modes=c(3,4,5)),tnsr)
 cs_fold <- function(mat,m=NULL,modes=NULL){
 	if(is.null(m)) stop("mode m must be specified")
 	if(is.null(modes)) stop("Tensor modes must be specified")
 	num_modes <- length(modes)
 	cs <- m
 	rs <- (1:num_modes)[-m]
-	fold(mat,rs=rs,cs=cs,modes=modes)	
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)	
 }
 
 ###Invisible Functions (undocumented)

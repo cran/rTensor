@@ -19,7 +19,7 @@
 #'  \describe{
 #'    \item{[}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{[<-}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{cs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
+#'    \item{matvec}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{dim}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{fnorm}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{head}{\code{signature(tnsr = "Tensor")}: ... }
@@ -33,7 +33,7 @@
 #'    \item{Ops}{\code{signature(e1 = "Tensor", e2 = "numeric")}: ... }
 #'    \item{Ops}{\code{signature(e1 = "Tensor", e2 = "Tensor")}: ... }
 #'    \item{print}{\code{signature(tnsr = "Tensor")}: ... }
-#'    \item{rs_unfold}{\code{signature(tnsr = "Tensor")}: ... }
+#'    \item{k_unfold}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{show}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{t}{\code{signature(tnsr = "Tensor")}: ... }
 #'    \item{tail}{\code{signature(tnsr = "Tensor")}: ... }
@@ -50,13 +50,13 @@
 #'
 #'To sum across any one mode of a tenor, use the function \code{\link{modeSum-methods}}. To compute the mean across any one mode, use \code{\link{modeMean-methods}}.
 #'
-#'You can always unfold any Tensor into a matrix, and the \code{\link{unfold-methods}}, \code{\link{rs_unfold-methods}}, and \code{\link{cs_unfold-methods}} methods are for that purpose. The output can be kept as a Tensor with 2 modes or a \code{matrix} object. Note that the m-mode unfolding is the same as rs_unfold for mode m, and matvec is the same as cs_unfold for mode 2. The vectorization function is also provided as \code{vec}.
+#'You can always unfold any Tensor into a matrix, and the \code{\link{unfold-methods}}, \code{\link{k_unfold-methods}}, and \code{\link{matvec-methods}} methods are for that purpose. The output can be kept as a Tensor with 2 modes or a \code{matrix} object. The vectorization function is also provided as \code{vec}. See the attached vignette for a visualization of the different unfoldings.
 #'
 #'Conversion from \code{array}/\code{matrix} to Tensor is facilitated via \code{\link{as.tensor}}. To convert from a Tensor instance, simply invoke \code{@@data}.
 #'
 #'The Frobenius norm of the Tensor is given by \code{\link{fnorm-methods}}, while the inner product between two Tensors (of equal modes) is given by \code{\link{innerProd-methods}}. You can also sum through any one mode to obtain the K-1 Tensor sum using \code{\link{modeSum-methods}}. \code{\link{modeMean-methods}} provides similar functionality to obtain the K-1 Tensor mean. These are primarily meant to be used internally but may be useful in doing statistics with Tensors.
 #'
-#'For Tensors with 3 modes, we also overloaded \code{t} (transpose) and \code{\link{image-methods}}, defined by Kilmer et.al (2013). See \code{\link{t-methods}}.
+#'For Tensors with 3 modes, we also overloaded \code{t} (transpose) defined by Kilmer et.al (2013). See \code{\link{t-methods}}.
 #'
 #'To create a Tensor with i.i.d. random normal(0, 1) entries, see \code{\link{rand_tensor}}.
 #'}
@@ -92,9 +92,9 @@ validity = function(object){
 #'
 #'For Row Space Unfolding or m-mode Unfolding, see \code{\link{rs_unfold-methods}}. For Column Space Unfolding or matvec, see \code{\link{cs_unfold-methods}}.
 #'
-#'\code{vec} returns the vectorization of the tensor.
+#'\code{\link{vec-methods}} returns the vectorization of the tensor.
 #'
-#'@details \code{unfold(tnsr,rs=NULL,cs=NULL)}
+#'@details \code{unfold(tnsr,row_idx=NULL,col_idx=NULL)}
 #'@export
 #'@docType methods
 #'@name unfold-methods
@@ -102,55 +102,85 @@ validity = function(object){
 #'@aliases unfold unfold,Tensor-method
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@param tnsr the Tensor instance
-#'@param rs the indices of the modes to map onto the row space
-#'@param cs the indices of the modes to map onto the column space
-#'@return matrix with \code{prod(rs)} rows and \code{prod(cs)} columns
-#'@seealso \code{\link{cs_unfold-methods}} and \code{\link{rs_unfold-methods}}
+#'@param row_idx the indices of the modes to map onto the row space
+#'@param col_idx the indices of the modes to map onto the column space
+#'@return matrix with \code{prod(row_idx)} rows and \code{prod(col_idx)} columns
+#'@seealso \code{\link{k_unfold-methods}} and \code{\link{matvec-methods}}
 #'@examples
 #'tnsr <- rand_tensor()
-#'matT3<-unfold(tnsr,rs=2,cs=c(3,1))
+#'matT3<-unfold(tnsr,row_idx=2,col_idx=c(3,1))
 setGeneric(name="unfold",
-def=function(tnsr,rs,cs){standardGeneric("unfold")})
+def=function(tnsr,row_idx,col_idx){standardGeneric("unfold")})
+
+#'Tensor k-mode Unfolding
+#'
+#'Unfolding of a tensor by mapping the kth mode (specified through parameter \code{m}), and all other modes onto the column space. This the most common type of unfolding operation for Tucker decompositions and its variants. Also known as k-mode matricization. 
+#'
+#'@docType methods
+#'@name k_unfold-methods
+#'@details \code{k_unfold(tnsr,m=NULL)}
+#'@export
+#'@rdname k_unfold-methods
+#'@aliases k_unfold k_unfold,Tensor-method
+####aliases k_unfold,ANY-method
+#'@references T. Kolda and B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
+#'@param tnsr the Tensor instance
+#'@param m the index of the mode to unfold on
+#'@return matrix with \code{x@@modes[m]} rows and \code{prod(x@@modes[-m])} columns
+#'@seealso \code{\link{matvec-methods}} and \code{\link{unfold-methods}}
+#'@examples
+#'tnsr <- rand_tensor()
+#'matT2<-rs_unfold(tnsr,m=2)
+setGeneric(name="k_unfold",
+def=function(tnsr,m){standardGeneric("k_unfold")})
+
+#'Tensor Matvec Unfolding
+#'
+#'For 3-tensors only. Stacks the slices along the third mode. This is the prevalent unfolding for T-SVD and T-MULT based on block circulant matrices.
+#'@docType methods
+#'@name matvec-methods
+#'@details \code{matvec(tnsr)}
+#'@export
+#'@rdname matvec-methods
+#'@aliases matvec matvec,Tensor-method
+#'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
+#'@param tnsr the Tensor instance
+#'@return matrix with \code{prod(x@@modes[-m])} rows and \code{x@@modes[m]} columns
+#'@seealso \code{\link{k_unfold-methods}} and \code{\link{unfold-methods}}
+#'@examples
+#'tnsr <- rand_tensor(c(2,3,4))
+#'matT1<- matvec(tnsr)
+setGeneric(name="matvec",
+           def=function(tnsr){standardGeneric("matvec")})
 
 #'Tensor Row Space Unfolding
 #'
-#'Unfolding of a tensor by mapping the mode 'm' onto the row space, and all other modes onto the column space. This the most common type of unfolding operation for Tucker decompositions and its variants. Also known as m-Mode unfolding/Matricization. 
+#'DEPRECATED. Please see \code{\link{k_unfold-methods}} and \code{\link{unfold-methods}}.
 #'
 #'@docType methods
 #'@name rs_unfold-methods
 #'@details \code{rs_unfold(tnsr,m=NULL)}
+#'@param tnsr Tensor instance
+#'@param m mode to be unfolded on
 #'@export
 #'@rdname rs_unfold-methods
 #'@aliases rs_unfold rs_unfold,Tensor-method
 ####aliases rs_unfold,ANY-method
-#'@references T. Kolda and B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
-#'@param x the Tensor instance
-#'@param m the index of the mode to map onto the row space
-#'@return atrix with \code{x@@modes[m]} rows and \code{prod(x@@modes[-m])} columns
-#'@seealso \code{\link{cs_unfold}} and \code{\link{unfold}}
-#'@examples
-#'tnsr <- rand_tensor()
-#'matT2<-rs_unfold(tnsr,m=2)
 setGeneric(name="rs_unfold",
 def=function(tnsr,m){standardGeneric("rs_unfold")})
 
 #'Tensor Column Space Unfolding
 #'
-#'Unfolding of a tensor by mapping the mode 'm' onto the column space, and all other modes onto the row space. For 3-tensors, this is also known as the 'matvec' operation when \code{m=2}. In fact, we provide \code{matvec} for convenience as well. This is the prevalent unfolding for T-SVD and T-MULT based on block circulant matrices.
+#'DEPRECATED. Please see \code{\link{matvec-methods}} and \code{\link{unfold-methods}}.
+#'
 #'@docType methods
 #'@name cs_unfold-methods
 #'@details \code{cs_unfold(tnsr,m=NULL)}
+#'@param tnsr Tensor instance
+#'@param m mode to be unfolded on
 #'@export
 #'@rdname cs_unfold-methods
 #'@aliases cs_unfold cs_unfold,Tensor-method
-#'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
-#'@param tnsr the Tensor instance
-#'@param m the index of the mode to map onto the column space
-#'@return matrix with \code{prod(x@@modes[-m])} rows and \code{x@@modes[m]} columns
-#'@seealso \code{\link{rs_unfold-methods}} and \code{\link{unfold-methods}}
-#'@examples
-#'tnsr <- rand_tensor()
-#'matT1<-cs_unfold(tnsr,m=3)
 setGeneric(name="cs_unfold",
 def=function(tnsr,m){standardGeneric("cs_unfold")})
 
@@ -241,6 +271,10 @@ def=function(tnsr1,tnsr2){standardGeneric("innerProd")})
 #'@docType methods
 #'@name initialize-methods
 #'@rdname initialize-methods
+#'@param .Object the tensor object
+#'@param num_modes number of modes of the tensor
+#'@param modes modes of the tensor
+#'@param data can be vector, matrix, or array
 #'@aliases initialize,Tensor-method
 #'@seealso \code{as.tensor}
 setMethod(f="initialize",
@@ -269,20 +303,20 @@ options(warn=-1)
 #'Return the vector of modes from a tensor
 #'
 #'@name dim-methods
-#'@details \code{dim(tnsr)}
+#'@details \code{dim(x)}
 #'@export
 #'@aliases dim,Tensor-method
 #'@docType methods
 #'@rdname dim-methods
-#'@param tnsr the Tensor instance
+#'@param x the Tensor instance
 #'@return an integer vector of the modes associated with \code{x}
 #'@examples
 #'tnsr <- rand_tensor()
 #'dim(tnsr)
 setMethod(f="dim",
 signature="Tensor",
-definition=function(tnsr){
-	tnsr@modes
+definition=function(x){
+	x@modes
 })
 
 #'Show for Tensor
@@ -290,12 +324,12 @@ definition=function(tnsr){
 #'Extend show for Tensor
 #'
 #'@name show-methods
-#'@details \code{show(x)}
+#'@details \code{show(object)}
 #'@export
 #'@aliases show,Tensor-method
 #'@docType methods
 #'@rdname show-methods
-#'@param x the Tensor instance
+#'@param object the Tensor instance
 #'@param ... additional parameters to be passed into show()
 #'@seealso \code{\link{print}}
 #'@examples
@@ -303,11 +337,11 @@ definition=function(tnsr){
 #'tnsr
 setMethod(f="show",
 signature="Tensor",
-definition=function(x){
-	cat("Numeric Tensor of", x@num_modes, "Modes\n", sep=" ")
-	cat("Modes: ", x@modes, "\n", sep=" ")
+definition=function(object){
+	cat("Numeric Tensor of", object@num_modes, "Modes\n", sep=" ")
+	cat("Modes: ", object@modes, "\n", sep=" ")
 	cat("Data: \n")
-	print(head(x@data))
+	print(head(object@data))
 })
 
 #'Print for Tensor
@@ -421,10 +455,10 @@ definition=function(x,i,j,...,value){
 #'@docType methods
 #'@name t-methods
 #'@rdname t-methods
-#'@details \code{t(tnsr)}
+#'@details \code{t(x)}
 #'@export
 #'@aliases t,Tensor-method
-#'@param tnsr a 3-tensor
+#'@param x a 3-tensor
 #'@return tensor transpose of \code{x}
 #'@references M. Kilmer, K. Braman, N. Hao, and R. Hoover, "Third-order tensors as operators on matrices: a theoretical and computational framework with applications in imaging". SIAM Journal on Matrix Analysis and Applications 2013.
 #'@examples
@@ -433,7 +467,8 @@ definition=function(x,i,j,...,value){
 #'identical(t(tnsr)@@data[,,2],t(tnsr@@data[,,5]))
 #'identical(t(t(tnsr)),tnsr)
 setMethod("t",signature="Tensor",
-definition=function(tnsr){
+definition=function(x){
+	tnsr <- x
 	if(tnsr@num_modes!=3) stop("Tensor Transpose currently only implemented for 3d Tensors")
 	modes <- tnsr@modes
 	new_arr <- array(apply(tnsr@data[,,c(1L,modes[3]:2L),drop=FALSE],MARGIN=3,FUN=t),dim=modes[c(2,1,3)])
@@ -447,15 +482,12 @@ definition=function(tnsr){
 #'@export
 #'@name Ops-methods
 #'@docType methods
-#'@aliases Ops-methods
-#'@aliases Ops,Tensor,Tensor-method
-#'@aliases Ops,Tensor,array-method
-#'@aliases Ops,Tensor,numeric-method
-#'@aliases Ops,array,Tensor-method
-#'@aliases Ops,numeric,Tensor-method
+#'@aliases Ops-methods Ops,Tensor,Tensor-method Ops,Tensor,array-method Ops,Tensor,numeric-method Ops,array,Tensor-method Ops,numeric,Tensor-method
+#'@param e1 left-hand object
+#'@param e2 right-hand object
 #'@examples
-#'tnsr <- rand_tensor()
-#'tnsr2 <- rand_tensor()
+#'tnsr <- rand_tensor(c(3,4,5))
+#'tnsr2 <- rand_tensor(c(3,4,5))
 #'tnsrsum <- tnsr + tnsr2
 #'tnsrdiff <- tnsr - tnsr2
 #'tnsrelemprod <- tnsr * tnsr2
@@ -552,9 +584,11 @@ definition=function(tnsr1,tnsr2){
 #'@rdname unfold-methods
 #'@aliases unfold,Tensor-method
 setMethod("unfold", signature="Tensor",
-definition=function(tnsr,rs=NULL,cs=NULL){
+definition=function(tnsr,row_idx=NULL,col_idx=NULL){
 	#checks
-	if(is.null(rs)||is.null(cs)) stop("row space and col space indices must be specified")
+	rs <- row_idx
+	cs <- col_idx
+	if(is.null(rs)||is.null(cs)) stop("row and column indices must be specified")
 	num_modes <- tnsr@num_modes
 	if (length(rs) + length(cs) != num_modes) stop("incorrect number of indices")
 	if(any(rs<1) || any(rs>num_modes) || any(cs < 1) || any(cs>num_modes)) stop("illegal indices specified")
@@ -569,6 +603,28 @@ definition=function(tnsr,rs=NULL,cs=NULL){
 	as.tensor(mat)
 })
 
+#'@rdname k_unfold-methods
+#'@aliases k_unfold,Tensor-method
+setMethod("k_unfold", signature="Tensor",
+definition=function(tnsr,m=NULL){
+	if(is.null(m)) stop("mode m must be specified")
+	num_modes <- tnsr@num_modes
+	rs <- m
+	cs <- (1:num_modes)[-m]
+	unfold(tnsr,row_idx=rs,col_idx=cs)
+})
+
+
+#'@rdname matvec-methods
+#'@aliases matvec,Tensor-method matvec,Tensor-method
+setMethod('matvec',signature="Tensor",
+          definition=function(tnsr){
+          if(tnsr@num_modes!=3) stop("Matvec currently only implemented for 3d Tensors")
+          num_modes <- tnsr@num_modes
+          stopifnot(num_modes==3)
+          unfold(tnsr,row_idx=c(1,3),col_idx=2)
+          })
+
 #'@rdname rs_unfold-methods
 #'@aliases rs_unfold,Tensor-method
 setMethod("rs_unfold", signature="Tensor",
@@ -577,7 +633,7 @@ definition=function(tnsr,m=NULL){
 	num_modes <- tnsr@num_modes
 	rs <- m
 	cs <- (1:num_modes)[-m]
-	unfold(tnsr,rs=rs,cs=cs)
+	unfold(tnsr,row_idx=rs,col_idx=cs)
 })
 
 #'@rdname cs_unfold-methods
@@ -588,7 +644,7 @@ definition=function(tnsr,m=NULL){
 	num_modes <- tnsr@num_modes
 	rs <- (1:num_modes)[-m]
 	cs <- m
-	unfold(tnsr,rs=rs,cs=cs)
+	unfold(tnsr,row_idx=rs,col_idx=cs)
 })
 options(warn=1)
 
@@ -631,49 +687,6 @@ as.tensor <- function(x,drop=FALSE){
 new("Tensor",num_modes,modes,data=array(x,dim=modes))
 }
 
-
-#####V1.0.1 Addition
-
-#'Image of 3-Tensor Slices
-#'
-#'Calls \code{image} on the multiple slices of the 3-Tensors to provide more conveinence than calling \code{image} on \code{tnsr@@data}. Need to specify which mode and the range of index along that mode.
-#'
-#'@docType methods
-#'@name image-methods
-#'@rdname image-methods
-#'@aliases image,Tensor-method
-#'@details \code{image(x,m=NULL,indices=NULL,...)}
-#'@export
-#'@param x the Tensor instance
-#'@param m the mode to slice along
-#'@param indices the range of indices to be plotted, by default all indices along mode \code{m}
-#'@examples
-#'tnsr <- rand_tensor(c(3,4,5))
-#'#image(tnsr,m=3,indices=c(2:4))
-#'#image(tnsr,m=2)
-setMethod("image",signature="Tensor",
-definition = function(x,m=NULL,indices=NULL,...){
-  modes <- x@modes
-  numModes <-x@num_modes
-  stopifnot((numModes==3)||(numModes==2))
-  if(numModes==2){
-  	image(x@data,...)
-  }
-  else{
-  stopifnot(m > 0 || m <= 3)
-  if(is.null(indices)) indices <- seq(modes[m])
-  x <- x@data
-  par(mfrow=c(1, length(indices)), mar=c(0.1,0.1,3,0.1))
-  if (m==1){
-  for (i in 1:length(indices)) image(x[indices[i],,], main=paste(c(indices[i]," of ",modes[m])),...)	
-  }else if(m==2){
-  for (i in 1:length(indices)) image(x[,indices[i],], main=paste(c(indices[i]," of ",modes[m])),...)  	
-  }else{
-  for (i in 1:length(indices)) image(x[,,indices[i]], main=paste(c(indices[i]," of ",modes[m])),...)
-  }
-  }		  	
-})
-
 #'Mode Permutation for Tensor
 #'
 #'Overloads \code{aperm} for Tensor class for convenience. 
@@ -681,46 +694,51 @@ definition = function(x,m=NULL,indices=NULL,...){
 #'@docType methods
 #'@name tperm-methods
 #'@rdname tperm-methods
-#'@aliases tperm,Tensor-method
-#'@details \code{tperm(x,perm=NULL,...)}
+#'@aliases tperm tperm-methods tperm,Tensor-method
+#'@details \code{tperm(tnsr,perm=NULL,...)}
 #'@export
-#'@param x the Tensor instance
+#'@param tnsr the Tensor instance
 #'@param perm the new permutation of the current modes
+#'@param ... additional parameters to be passed into \code{aperm}
 #'@examples
 #'tnsr <- rand_tensor(c(3,4,5))
 #'dim(tperm(tnsr,perm=c(2,1,3)))
 #'dim(tperm(tnsr,perm=c(1,3,2)))
 setGeneric(name="tperm",
-def=function(tnsr,...){standardGeneric("tperm")})
+def=function(tnsr,perm,...){standardGeneric("tperm")})
 
 #'@rdname tperm-methods
-#'@aliases tperm,Tensor-method
+#'@aliases tperm-methods tperm,Tensor-method
 setMethod("tperm",signature="Tensor",
 definition=function(tnsr,...){
 	as.tensor(aperm(tnsr@data,...))
 })
 
-#'@rdname unfold-methods
-#'@aliases unfold,Tensor-method vec,Tensor-method
-setGeneric(name="vec",def=function(tnsr,...){standardGeneric("vec")})
 
-#'@rdname unfold-methods
-#'@aliases unfold,Tensor-method vec,Tensor-method
+#'Tensor Vec
+#'
+#'Turns the tensor into a single vector, following the convention that earlier indices vary slower than later indices.
+#'@docType methods
+#'@name vec-methods
+#'@details \code{vec(tnsr)}
+#'@export
+#'@rdname vec-methods
+#'@aliases vec vec,Tensor-method
+#'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
+#'@param tnsr the Tensor instance
+#'@return vector with length \code{prod(x@@modes)}
+#'@examples
+#'tnsr <- rand_tensor(c(4,5,6,7))
+#'vec(tnsr)
+#'@rdname vec-methods
+#'@aliases vec,Tensor-method vec,Tensor-method
+setGeneric(name="vec",def=function(tnsr){standardGeneric("vec")})
+
+#'@rdname vec-methods
+#'@aliases vec,Tensor-method vec,Tensor-method
 setMethod("vec",signature="Tensor",
 definition=function(tnsr){
-	as.tensor(as.vector(tnsr@data))
+	as.vector(tnsr@data)
 })
 
-#'@rdname cs_unfold-methods
-#'@aliases cs_unfold,Tensor-method matvec,Tensor-method
-setGeneric(name="matvec",
-           def=function(tnsr,...){standardGeneric("matvec")})
 
-#'@rdname cs_unfold-methods
-#'@aliases cs_unfold,Tensor-method matvec,Tensor-method
-setMethod('matvec',signature="Tensor",
-          definition=function(tnsr){
-          num_modes <- tnsr@num_modes
-          stopifnot(num_modes==3)
-          unfold(tnsr,rs=c(1,3),cs=2)
-          })
