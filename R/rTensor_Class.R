@@ -290,7 +290,11 @@ definition = function(.Object, num_modes=NULL, modes=NULL, data=NULL){
 	}
 	.Object@num_modes <- num_modes
 	.Object@modes <- modes
-	.Object@data <- array(data,dim=modes)
+	if (is.vector(data)){
+		.Object@data <- array(data,dim=modes)
+	}else{
+		.Object@data <- data
+	}
 	validObject(.Object)
 	.Object
 })
@@ -445,7 +449,11 @@ definition=function(x,i,j,...,drop=TRUE){
 #'@rdname extract-methods
 setMethod("[<-", signature="Tensor",
 definition=function(x,i,j,...,value){
-	as.tensor(`[<-`(x@data,i,j,...,value=value))
+	if (is(value,"Tensor")){
+		as.tensor(`[<-`(x@data,i,j,...,value=value@data))
+	}else{
+		as.tensor(`[<-`(x@data,i,j,...,value=value))
+	}
 })
 
 #'Tensor Transpose
@@ -675,17 +683,40 @@ as.tensor <- function(x,drop=FALSE){
 	if (is.vector(x)){
 		modes <- c(length(x))
 		num_modes <- 1L
-	}else{
+		new("Tensor", num_modes, modes, data = x)
+	}
+	else {
 		modes <- dim(x)
 		num_modes <- length(modes)
 		dim1s <- which(modes==1)
-		if(drop && (length(dim1s)>0)){
+		if (drop && (length(dim1s)>0)){
 			modes <- modes[-dim1s]
 			num_modes <- num_modes-length(dim1s)
+			new("Tensor",num_modes,modes,data=array(x,dim=modes))
+		}
+		else{
+			new("Tensor",num_modes,modes,data=x)
 		}
 	}
-new("Tensor",num_modes,modes,data=array(x,dim=modes))
 }
+
+#as.tensor <- function(x,drop=FALSE){
+#	stopifnot(is.array(x)||is.vector(x))
+#	if (is.vector(x)){
+#		modes <- c(length(x))
+#		num_modes <- 1L
+#	}else{
+#		modes <- dim(x)
+#		num_modes <- length(modes)
+#		dim1s <- which(modes==1)
+#		if(drop && (length(dim1s)>0)){
+#			modes <- modes[-dim1s]
+#			num_modes <- num_modes-length(dim1s)
+#		}
+#	}
+#new("Tensor",num_modes,modes,data=array(x,dim=modes))
+#}
+
 
 #'Mode Permutation for Tensor
 #'

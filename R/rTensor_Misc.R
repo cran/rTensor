@@ -1,22 +1,22 @@
 ###Functions that operate on Matrices and Arrays
 
-#'List Hamadard Product
+#'List hadamard Product
 #'
-#'Returns the Hamadard (element-wise) product from a list of matrices or vectors. Commonly used for n-mode products and various Tensor decompositions.
-#'@name hamadard_list
-#'@rdname hamadard_list
-#'@aliases hamadard_list
+#'Returns the hadamard (element-wise) product from a list of matrices or vectors. Commonly used for n-mode products and various Tensor decompositions.
+#'@name hadamard_list
+#'@rdname hadamard_list
+#'@aliases hadamard_list
 #'@export
 #'@param L list of matrices or vectors
-#'@return matrix that is the Hamadard product
+#'@return matrix that is the hadamard product
 #'@seealso \code{\link{kronecker_list}}, \code{\link{khatri_rao_list}}
 #'@note The modes/dimensions of each element in the list must match.
 #'@examples
 #'lizt <- list('mat1' = matrix(runif(40),ncol=4), 
 #' 'mat2' = matrix(runif(40),ncol=4),
 #' 'mat3' = matrix(runif(40),ncol=4))
-#'dim(hamadard_list(lizt))
-hamadard_list <- function(L){
+#'dim(hadamard_list(lizt))
+hadamard_list <- function(L){
 	isvecORmat <- function(x){is.matrix(x) || is.vector(x)}
 	stopifnot(all(unlist(lapply(L,isvecORmat))))
 	retmat <- L[[1]]
@@ -35,7 +35,7 @@ hamadard_list <- function(L){
 #'@export
 #'@param L list of matrices or vectors
 #'@return matrix that is the Kronecker product
-#'@seealso \code{\link{hamadard_list}}, \code{\link{khatri_rao_list}}, \code{\link{kronecker}}
+#'@seealso \code{\link{hadamard_list}}, \code{\link{khatri_rao_list}}, \code{\link{kronecker}}
 #'@examples
 #'smalllizt <- list('mat1' = matrix(runif(12),ncol=4), 
 #' 'mat2' = matrix(runif(12),ncol=4),
@@ -216,8 +216,8 @@ t_mult <- function(x,y){
 		fft_ret[,,i]<-matrix(first,nrow=dim(first)[1])%*%matrix(second,,nrow=dim(second)[1])
 	}
 	#ifft and return as Tensor
-	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
-	as.tensor(aperm(apply(fft_ret,MARGIN=1:2,ifft),c(2,3,1)),drop=FALSE)
+	#.ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
+	as.tensor(aperm(apply(fft_ret,MARGIN=1:2, .ifft),c(2,3,1)),drop=FALSE)
 }
 
 #####Special Tensors
@@ -373,7 +373,43 @@ cs_fold <- function(mat,m=NULL,modes=NULL){
 	fold(mat,row_idx=rs,col_idx=cs,modes=modes)	
 }
 
+#'ORL Database of Faces
+#'
+#'A dataset containing pictures of 40 individuals under 10 different lightings. Each image has 92 x 112 pixels. Structured as a 4-tensor with modes 92 x 112 x 40 x 10.
+#'@format A Tensor object with modes 92 x 112 x 40 x 10. The first two modes correspond to the image pixels, the third mode corresponds to the individual, and the last mode correpsonds to the lighting.
+#'@source \url{http://www.cl.cam.ac.uk/research/dtg/attarchive/facedatabase.html}
+#'@seealso \code{\link{plot_orl}}
+"faces_tnsr"
+
+#'Function to plot the ORL Database of Faces
+#'
+#'A wrapper function to image() to allow easy visualization of faces_tnsr, the ORL Face Dataset.
+#'@export
+#'@name plot_orl
+#'@rdname plot_orl
+#'@aliases plot_orl
+#'@param subject which subject to plot (1-40)
+#'@param condition which lighting condition (1-10)
+#'@references AT&T Laboratories Cambridge. \url{http://www.cl.cam.ac.uk/research/dtg/attarchive/facedatabase.html}
+#'@references F. Samaria, A. Harter, "Parameterisation of a Stochastic Model for Human Face Identification". IEEE Workshop on Applications of Computer Vision 1994.
+#'@seealso \code{\link{faces_tnsr}}
+#'@examples
+#'plot_orl(subject=5,condition=4)
+#'plot_orl(subject=2,condition=7)
+plot_orl <- function(subject=1, condition=1){
+	if (subject%in%seq(1,40)==FALSE) stop("subject must be between 1 and 40")
+	if (condition%in%seq(1,10)==FALSE) stop("condition must be between 1 and 10")
+	greyscale = grey(seq(0,1,length=256))
+	faces_tnsr <- NULL
+	rm(faces_tnsr)
+	data(faces_tnsr, package='rTensor', envir=environment())
+	image(faces_tnsr[,,subject,condition]@data,col=greyscale)
+}
+
+
 ###Invisible Functions (undocumented)
+#Wrapper to Inverse FFT
+.ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
 #Creates a superdiagonal tensor
 .superdiagonal_tensor <- function(num_modes,len,elements=1L){
 	modes <- rep(len,num_modes)
@@ -413,3 +449,59 @@ cs_fold <- function(mat,m=NULL,modes=NULL){
    if(pr) print(toc - tic)
    invisible(toc - tic)
 }
+# #'MNIST Handwritten Digits Dataset in Tensor Format
+# #'
+# #'A dataset containing the MNIST training set, which contains 60,000 images (28 x 28 pixels) of handwritten digits (0-9).
+# #'@format Organized into a List, with each element of the list being a 3-Tensor corresponding to a single digit. Each 3-Tensor is (N x 28 x 28), where N is the number of samples that correspond to this digit in the original training dataset.
+# #'@source \url{http://yann.lecun.com/exdb/mnist/}
+# #'@seealso \code{\link{MNIST_test}}, \code{\link{plot_MNIST}}
+# "MNIST_train"
+
+# #'MNIST Handwritten Digits Databse in Tensor Format
+# #'
+# #'A dataset containing the MNIST test set, which contains 10,000 images (28 x 28 pixels) of handwritten digits (0-9).
+# #'@format Organized into a List, with each element of the list being a 3-Tensor corresponding to a single digit. Each 3-Tensor is (N x 28 x 28), where N is the number of samples that correspond to this digit in the original test dataset.
+# #'@source \url{http://yann.lecun.com/exdb/mnist/}
+# #'@seealso \code{\link{MNIST_train}}, \code{\link{plot_MNIST}}
+# "MNIST_test"
+
+# #'Function to plot the MNIST Dataset
+# #'
+# #'A wrapper function to image() to allow easy visualization of MNIST_train and MNIST_test, the training and testing datasets from MNIST.
+# #'@export
+# #'@name plot_MNIST
+# #'@rdname plot_MNIST
+# #'@aliases plot_MNIST
+# #'@param train_or_test 'train' or 'test' dataset
+# #'@param digit which digit (0-9)
+# #'@param index which index for this digit (if NULL then a random index will be chosen)
+# #'@references \url{http://yann.lecun.com/exdb/mnist/}
+# #'@references Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner, "Gradient-based Learning Applied to Document Recognition". Proceedings of the IEEE, 86, 2278-2324.
+# #'@seealso \code{\link{MNIST_train}}, \code{\link{MNIST_test}}
+# #'@examples
+# #'plot_MNIST('train',digit=5,index=14)
+# #'plot_MNIST('train',digit=9,index=14)
+# #'plot_MNIST('test',digit=3)
+# plot_MNIST <- function(train_or_test='train',digit=9,index=NULL){
+	# if ((digit%in%seq(0,9))==FALSE) stop("digit must be an integer between 0 and 9")
+	# greyscale = grey(seq(0,1,length=256))
+	# MNIST_train <- NULL; MNIST_test <- NULL
+	# rm(MNIST_train); rm(MNIST_test)
+	# if (train_or_test=='train'){
+		# data(MNIST_train, package='rTensor', envir=environment())
+		# tmp_tnsr <- MNIST_train[[digit+1]]
+		# num_length <- tmp_tnsr@modes[1]
+		# if (is.null(index)) index <- sample(seq(1,num_length),1)
+		# if ((index%in%seq(1,num_length))==FALSE) stop(paste("index must not exceed ",num_length," for this digit",sep=""))
+		# image(tmp_tnsr[index,,]@data, col=greyscale) 
+	# }else if(train_or_test=='test'){
+		# data(MNIST_test, package='rTensor', envir=environment())
+		# tmp_tnsr <- MNIST_test[[digit+1]]
+		# num_length <- tmp_tnsr@modes[1]
+		# if (is.null(index)) index <- sample(seq(1,num_length),1)
+		# if ((index%in%seq(1,num_length))==FALSE) stop(paste("index must not exceed ",num_length," for this digit",sep=""))
+		# image(tmp_tnsr[index,,]@data, col=greyscale) 
+	# }else{
+		# stop("train_or_test must be 'train' or 'test'")
+	# }
+# }

@@ -27,7 +27,7 @@ rTensor also provides a set functions for tensors multiplication: \describe{
 }
 
 ...as well as for matrices: \describe{
-	\item{\code{\link{hamadard_list}}}{Computes the Hamadard (element-wise) product of a list of matrices}
+	\item{\code{\link{hadamard_list}}}{Computes the Hamadard (element-wise) product of a list of matrices}
 	\item{\code{\link{kronecker_list}}}{Computes the Kronecker product of a list of matrices}
 	\item{\code{\link{khatri_rao}}}{Computes the Khatri-Rao product of two matrices}
 	\item{\code{\link{khatri_rao_list}}}{Computes the Khatri-Rao product of a list of matrices}

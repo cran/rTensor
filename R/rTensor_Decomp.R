@@ -4,7 +4,7 @@
 #'
 #'Higher-order SVD of a K-Tensor. Write the K-Tensor as a (m-mode) product of a core Tensor (possibly smaller modes) and K orthogonal factor matrices. Truncations can be specified via \code{ranks} (making them smaller than the original modes of the K-Tensor will result in a truncation). For the mathematical details on HOSVD, consult Lathauwer et. al. (2000).
 #'@export
-#'@details Uses the Alternating Least Squares (ALS) estimation procedure. A progress bar is included to help monitor operations on large tensors.
+#'@details A progress bar is included to help monitor operations on large tensors.
 #'@name hosvd
 #'@rdname hosvd
 #'@aliases hosvd
@@ -14,7 +14,7 @@
 #'\item{\code{Z}}{core tensor with modes speficied by \code{ranks}}
 #'\item{\code{U}}{a list of orthogonal matrices, one for each mode}
 #'\item{\code{est}}{estimate of \code{tnsr} after compression}
-#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)} - if there was no truncation, then this is O(mach_eps) }
+#'\item{\code{fnorm_resid}}{the Frobenius norm of the error \code{fnorm(est-tnsr)} - if there was no truncation, then this is on the order of mach_eps * fnorm. }
 #'}
 #'@seealso \code{\link{tucker}}
 #'@references L. Lathauwer, B.Moor, J. Vanderwalle "A multilinear singular value decomposition". Journal of Matrix Analysis and Applications 2000.
@@ -26,11 +26,16 @@
 #'hosvdD2 <-hosvd(tnsr,ranks=c(3,3,4))
 #'hosvdD2$fnorm_resid
 hosvd <- function(tnsr,ranks=NULL){
-	#stopifnot(is(tnsr,"Tensor"))
+	stopifnot(is(tnsr,"Tensor"))
+	if (sum(ranks<=0)!=0) stop("ranks must be positive")
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+	
 	num_modes <- tnsr@num_modes
 	#no truncation if ranks not provided
 	if(is.null(ranks)){
 		ranks <- tnsr@modes
+	}else{
+		if (sum(ranks>tnsr@modes)!=0) stop("ranks must be smaller than the corresponding mode")
 	}
 	#progress bar
 	pb <- txtProgressBar(min=0,max=num_modes,style=3)
@@ -74,14 +79,16 @@ hosvd <- function(tnsr,ranks=NULL){
 #'@seealso \code{\link{tucker}}
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@examples
-#'tnsr <- rand_tensor(c(6,7,8))
-#'cpD <- cp(tnsr,num_components=5) 
+#'subject <- faces_tnsr[,,14,]
+#'cpD <- cp(subject,num_components=10) 
 #'cpD$conv 
 #'cpD$norm_percent 
 #'plot(cpD$all_resids) 
 cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	if(is.null(num_components)) stop("num_components must be specified")
 	stopifnot(is(tnsr,"Tensor"))
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+
 	#initialization via truncated hosvd
 	num_modes <- tnsr@num_modes
 	modes <- tnsr@modes
@@ -113,7 +120,7 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 	while((curr_iter < max_iter) && (!converged)){
 	setTxtProgressBar(pb,curr_iter)
 		for(m in 1:num_modes){
-			V <- hamadard_list(lapply(U_list[-m],function(x) {t(x)%*%x}))
+			V <- hadamard_list(lapply(U_list[-m],function(x) {t(x)%*%x}))
 			V_inv <- solve(V)			
 			tmp <- unfolded_mat[[m]]%*%khatri_rao_list(U_list[-m],reverse=TRUE)%*%V_inv
 			lambdas <- apply(tmp,2,norm_vec)
@@ -163,14 +170,18 @@ cp <- function(tnsr, num_components=NULL,max_iter=25, tol=1e-5){
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@note The length of \code{ranks} must match \code{tnsr@@num_modes}.
 #'@examples
-#'tnsr <- rand_tensor(c(6,7,8))
-#'tuckerD <- tucker(tnsr,ranks=c(3,3,4))
+#'tnsr <- rand_tensor(c(4,4,4,4))
+#'tuckerD <- tucker(tnsr,ranks=c(2,2,2,2))
 #'tuckerD$conv 
 #'tuckerD$norm_percent
 #'plot(tuckerD$all_resids)
 tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 	stopifnot(is(tnsr,"Tensor"))
 	if(is.null(ranks)) stop("ranks must be specified")
+	if (sum(ranks>tnsr@modes)!=0) stop("ranks must be smaller than the corresponding mode")
+	if (sum(ranks<=0)!=0) stop("ranks must be positive")
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+
 	#initialization via truncated hosvd
 	num_modes <- tnsr@num_modes
 	U_list <- vector("list",num_modes)
@@ -250,14 +261,18 @@ tucker <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
 #'@references H. Lu, K. Plataniotis, A. Venetsanopoulos, "Mpca: Multilinear principal component analysis of tensor objects". IEEE Trans. Neural networks, 2008.
 #'@note The length of \code{ranks} must match \code{tnsr@@num_modes-1}.
 #'@examples
-#'tnsr <-rand_tensor(c(100,10,10))
-#'mpcaD <- mpca(tnsr,ranks=c(30,5))
+#'subject <- faces_tnsr[,,21,]
+#'mpcaD <- mpca(subject,ranks=c(10,10))
 #'mpcaD$conv
 #'mpcaD$norm_percent
 #'plot(mpcaD$all_resids)
 mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 	if(is.null(ranks)) stop("ranks must be specified")
 	stopifnot(is(tnsr,"Tensor"))
+	if (sum(ranks>tnsr@modes)!=0) stop("ranks must be smaller than the corresponding mode")
+	if (sum(ranks<=0)!=0) stop("ranks must be positive")
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+
 	#initialization via hosvd of M-1 modes
 	num_modes <- tnsr@num_modes
 	stopifnot(length(ranks)==(num_modes-1))
@@ -339,10 +354,14 @@ mpca <- function(tnsr, ranks = NULL, max_iter = 25, tol=1e-5){
 #'}
 #'@references C. Crainiceanu, B. Caffo, S. Luo, V. Zipunnikov, N. Punjabi, "Population value decomposition: a framework for the analysis of image populations". Journal of the American Statistical Association, 2013.
 #'@examples
-#'tnsr <- rand_tensor(c(10,5,100))
-#'pvdD<-pvd(tnsr,uranks=rep(8,100),wranks=rep(4,100),a=8,b=4)
+#'subject <- faces_tnsr[,,8,]
+#'pvdD<-pvd(subject,uranks=rep(46,10),wranks=rep(56,10),a=46,b=56)
 pvd <- function(tnsr,uranks=NULL,wranks=NULL,a=NULL,b=NULL){
 	if(tnsr@num_modes!=3) stop("PVD only for 3D")
+	if (sum(uranks<=0)!=0) stop("uranks must be positive")
+	if (sum(wranks<=0)!=0) stop("wranks must be positive")
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+
 	if(is.null(uranks)||is.null(wranks)) stop("U and V ranks must be specified")
 	if(is.null(a)||is.null(b)) stop("a and b must be specified")
 	modes <- tnsr@modes
@@ -403,6 +422,8 @@ pvd <- function(tnsr,uranks=NULL,wranks=NULL,a=NULL,b=NULL){
 #'tsvdD <- t_svd(tnsr)
 t_svd<-function(tnsr){
 	if(tnsr@num_modes!=3) stop("T-SVD only implemented for 3d so far")
+	if (.is_zero_tensor(tnsr)) stop("Zero tensor detected")
+
 	modes <- tnsr@modes
 	n1 <- modes[1]
 	n2 <- modes[2]
@@ -410,7 +431,7 @@ t_svd<-function(tnsr){
 	#progress bar
 	pb <- txtProgressBar(min=0,max=n3,style=3)
 	#define ifft
-	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
+	#.ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
 	#fft for each of the n1n2 vectors (of length n3) along mode 3
 	fftz <- aperm(apply(tnsr@data,MARGIN=1:2,fft),c(2,3,1))
 	#svd for each face (svdz is a list of the results)
@@ -430,9 +451,9 @@ t_svd<-function(tnsr){
 	}	
 	close(pb)
 	#for each svd result, we want to apply ifft
-	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2,ifft),c(2,3,1)))
-	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2,ifft),c(2,3,1)))
-	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2,ifft),c(2,3,1)))
+	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2, .ifft),c(2,3,1)))
+	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2, .ifft),c(2,3,1)))
+	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2, .ifft),c(2,3,1)))
 	invisible(list(U=U,V=V,S=S))
 }
 
@@ -454,6 +475,14 @@ t_svd_reconstruct <- function(L){
 	t_mult(t_mult(L$U,L$S),t(L$V))
 }
 
+#####
+.is_zero_tensor <- function(tnsr){
+	if (sum(tnsr@data==0)==prod(tnsr@modes)) return(TRUE)
+	return(FALSE)
+}
+
+
+
 ###t-compress (Not Supported)
 .t_compress <- function(tnsr,k){
 	modes <- tnsr@modes
@@ -463,7 +492,7 @@ t_svd_reconstruct <- function(L){
 	#progress bar
 	pb <- txtProgressBar(min=0,max=n3,style=3)
 	#define ifft
-	ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
+	#.ifft <- function(x){suppressWarnings(as.numeric(fft(x,inverse=TRUE))/length(x))}
 	#fft for each of the n1n2 vectors (of length n3) along mode 3
 	fftz <- aperm(apply(tnsr@data,MARGIN=1:2,fft),c(2,3,1))
 	#svd for each face (svdz is a list of the results)
@@ -483,9 +512,9 @@ t_svd_reconstruct <- function(L){
 	}	
 	close(pb)
 	#for each svd result, we want to apply ifft
-	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2,ifft),c(2,3,1)))
-	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2,ifft),c(2,3,1)))
-	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2,ifft),c(2,3,1)))
+	U <- as.tensor(aperm(apply(U_arr,MARGIN=1:2, .ifft),c(2,3,1)))
+	V <- as.tensor(aperm(apply(V_arr,MARGIN=1:2, .ifft),c(2,3,1)))
+	S <- as.tensor(aperm(apply(S_arr,MARGIN=1:2, .ifft),c(2,3,1)))
 	
 	est <- as.tensor(array(0,dim=modes))
 	for (i in 1:k){
