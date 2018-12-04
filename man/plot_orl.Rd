@@ -26,4 +26,3 @@ F. Samaria, A. Harter, "Parameterisation of a Stochastic Model for Human Face Id
 \seealso{
 \code{\link{faces_tnsr}}
 }
-

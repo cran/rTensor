@@ -48,4 +48,3 @@ H. Lu, K. Plataniotis, A. Venetsanopoulos, "Mpca: Multilinear principal componen
 \seealso{
 \code{\link{tucker}}, \code{\link{hosvd}}
 }
-

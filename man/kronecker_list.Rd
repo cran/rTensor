@@ -24,4 +24,3 @@ dim(kronecker_list(smalllizt))
 \seealso{
 \code{\link{hadamard_list}}, \code{\link{khatri_rao_list}}, \code{\link{kronecker}}
 }
-

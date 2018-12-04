@@ -28,4 +28,3 @@ indices <- c(10,20,30,40)
 arr <- array(runif(prod(indices)), dim = indices)
 arrT <- as.tensor(arr); arrT
 }
-

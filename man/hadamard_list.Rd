@@ -27,4 +27,3 @@ dim(hadamard_list(lizt))
 \seealso{
 \code{\link{kronecker_list}}, \code{\link{khatri_rao_list}}
 }
-

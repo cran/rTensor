@@ -18,4 +18,3 @@ A dataset containing pictures of 40 individuals under 10 different lightings. Ea
 \code{\link{plot_orl}}
 }
 \keyword{datasets}
-

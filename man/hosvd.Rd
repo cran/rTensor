@@ -41,4 +41,3 @@ L. Lathauwer, B.Moor, J. Vanderwalle "A multilinear singular value decomposition
 \seealso{
 \code{\link{tucker}}
 }
-

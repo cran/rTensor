@@ -40,4 +40,3 @@ pvdD<-pvd(subject,uranks=rep(46,10),wranks=rep(56,10),a=46,b=56)
 \references{
 C. Crainiceanu, B. Caffo, S. Luo, V. Zipunnikov, N. Punjabi, "Population value decomposition: a framework for the analysis of image populations". Journal of the American Statistical Association, 2013.
 }
-
