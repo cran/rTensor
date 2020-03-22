@@ -1,11 +1,11 @@
-ca2e68546a8f78959c5bb8eaca57fff2 *DESCRIPTION
+85b481445f4c09d01d7fc3a0046af16e *DESCRIPTION
 c3bf55a84ea3350705ed257d761bac52 *NAMESPACE
 e05c0ffafde20e05976e03937a7db0c8 *NEWS
 ffc03255ba4e080d0047560b73cb61d2 *R/rTensor_Class.R
 9ed46acfb27da90137a399c82356da17 *R/rTensor_Decomp.R
 c3534be81867c4eda0061b82f374de1a *R/rTensor_Misc.R
 75438c1404e595f8576d537fbbe38210 *data/datalist
-2ee8db1fc32239281faba146435849af *data/faces_tnsr.RData
+f66b6e0766d2bf07bbca88bf71a0a45f *data/faces_tnsr.RData
 6461359d551273bab1da53d89347c5ef *inst/CITATION
 7b43acc0eaee518c8a20fa62eb990fad *man/Ops-methods.Rd
 79e558b0479fc9134554b18611522c01 *man/Tensor-class.Rd
@@ -39,7 +39,7 @@ f2c88ab780248f76a1b250c315146eb8 *man/k_fold.Rd
 9907649fbfe2aa27d012daf0bea17329 *man/rand_tensor.Rd
 2f729ef36ade8d9ca1d89d6f4e58a9f8 *man/rs_fold.Rd
 b4b296075d872124e3a98227eb9500f7 *man/rs_unfold-methods.Rd
-3296cf3917a5d3229953ffc0eb61b91d *man/show-methods.Rd
+dc87d163de61c79c72854da5da248736 *man/show-methods.Rd
 9bf7b9df80c93fc685616fa6feda621d *man/t-methods.Rd
 479651b5d317845877d80d3139b5c11b *man/t_mult.Rd
 cdbe1754f4463659b27b9abf8133db5c *man/t_svd.Rd

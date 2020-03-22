@@ -10,8 +10,6 @@
 }
 \arguments{
 \item{object}{the Tensor instance}
-
-\item{...}{additional parameters to be passed into show()}
 }
 \description{
 Extend show for Tensor

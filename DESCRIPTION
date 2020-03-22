@@ -1,7 +1,7 @@
 Package: rTensor
 Type: Package
 Title: Tools for Tensor Analysis and Decomposition
-Version: 1.4
+Version: 1.4.1
 Author: James Li and Jacob Bien and Martin Wells
 Maintainer: James Li <jamesyili@gmail.com>
 Description: A set of tools for creation, manipulation, and modeling
@@ -23,8 +23,8 @@ Depends: R (>= 2.10.0)
 LazyData: true
 Date: 2018-12-03
 URL: http://jamesyili.github.io/rTensor
-Packaged: 2018-12-04 02:00:28 UTC; jamesyili
+Packaged: 2020-03-22 09:07:35 UTC; hornik
 RoxygenNote: 6.1.1
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2018-12-04 10:20:09 UTC
+Date/Publication: 2020-03-22 09:32:41 UTC
