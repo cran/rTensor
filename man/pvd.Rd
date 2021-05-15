@@ -34,8 +34,13 @@ The default Population Value Decomposition (PVD) of a series of 2D images. Const
 The PVD is not an iterative method, but instead relies on \code{n3 + 2}separate PCA decompositions. The third mode is for how many images are in the set.
 }
 \examples{
-subject <- faces_tnsr[,,8,]
-pvdD<-pvd(subject,uranks=rep(46,10),wranks=rep(56,10),a=46,b=56)
+### How to retrieve faces_tnsr from figshare
+# faces_tnsr <- load_orl()
+# subject <- faces_tnsr[,,8,]
+dummy_faces_tnsr <- rand_tensor(c(92,112,40,10))
+subject <- dummy_faces_tnsr[,,8,]
+pvdD <- pvd(subject, uranks=rep(46,10), wranks=rep(56,10), a=46, b=56)
+plot(pvdD$fnorm_resid)
 }
 \references{
 C. Crainiceanu, B. Caffo, S. Luo, V. Zipunnikov, N. Punjabi, "Population value decomposition: a framework for the analysis of image populations". Journal of the American Statistical Association, 2013.

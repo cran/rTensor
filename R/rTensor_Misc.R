@@ -1,5 +1,13 @@
 ###Functions that operate on Matrices and Arrays
 
+load_orl <- function(){
+	faces_tnsr <- NULL
+	tempfile <- tempfile()
+	download.file("https://ndownloader.figshare.com/files/28005765", tempfile)
+	load(tempfile)
+	faces_tnsr
+}
+
 #'List hadamard Product
 #'
 #'Returns the hadamard (element-wise) product from a list of matrices or vectors. Commonly used for n-mode products and various Tensor decompositions.
@@ -12,7 +20,7 @@
 #'@seealso \code{\link{kronecker_list}}, \code{\link{khatri_rao_list}}
 #'@note The modes/dimensions of each element in the list must match.
 #'@examples
-#'lizt <- list('mat1' = matrix(runif(40),ncol=4), 
+#'lizt <- list('mat1' = matrix(runif(40),ncol=4),
 #' 'mat2' = matrix(runif(40),ncol=4),
 #' 'mat3' = matrix(runif(40),ncol=4))
 #'dim(hadamard_list(lizt))
@@ -37,7 +45,7 @@ hadamard_list <- function(L){
 #'@return matrix that is the Kronecker product
 #'@seealso \code{\link{hadamard_list}}, \code{\link{khatri_rao_list}}, \code{\link{kronecker}}
 #'@examples
-#'smalllizt <- list('mat1' = matrix(runif(12),ncol=4), 
+#'smalllizt <- list('mat1' = matrix(runif(12),ncol=4),
 #' 'mat2' = matrix(runif(12),ncol=4),
 #' 'mat3' = matrix(runif(12),ncol=4))
 #'dim(kronecker_list(smalllizt))
@@ -86,7 +94,7 @@ khatri_rao <- function(x,y){
 #'@seealso \code{\link{khatri_rao}}
 #'@note The number of columns must match in every element of the input list.
 #'@examples
-#'smalllizt <- list('mat1' = matrix(runif(12),ncol=4), 
+#'smalllizt <- list('mat1' = matrix(runif(12),ncol=4),
 #' 'mat2' = matrix(runif(12),ncol=4),
 #' 'mat3' = matrix(runif(12),ncol=4))
 #'dim(khatri_rao_list(smalllizt))
@@ -154,7 +162,7 @@ ttm<-function(tnsr,mat,m=NULL){
 #'@references T. Kolda, B. Bader, "Tensor decomposition and applications". SIAM Applied Mathematics and Applications 2009.
 #'@examples
 #'tnsr <- new("Tensor",3L,c(3L,4L,5L),data=runif(60))
-#'lizt <- list('mat1' = matrix(runif(30),ncol=3), 
+#'lizt <- list('mat1' = matrix(runif(30),ncol=3),
 #' 'mat2' = matrix(runif(40),ncol=4),
 #' 'mat3' = matrix(runif(50),ncol=5))
 #'ttl(tnsr,lizt,ms=c(1,2,3))
@@ -176,8 +184,8 @@ ttl<-function(tnsr,list_mat,ms=NULL){
 	tnsr_m <- rs_unfold(tnsr,m=m)@data
 	retarr_m <- mat%*%tnsr_m
 	tnsr <- rs_fold(retarr_m,m=m,modes=modes_out)
-	}	
-	tnsr	
+	}
+	tnsr
 }
 
 #'Tensor Multiplication (T-MULT)
@@ -272,7 +280,7 @@ fold <- function(mat, row_idx = NULL, col_idx = NULL, modes=NULL){
 		if(!is.matrix(mat))  stop("mat must be of class 'matrix'")
 		}else{
 			stopifnot(mat@num_modes==2)
-			mat <- mat@data			
+			mat <- mat@data
 			}
 	num_modes <- length(modes)
 	stopifnot(num_modes==length(rs)+length(cs))
@@ -331,7 +339,7 @@ unmatvec <- function(mat,modes=NULL){
 	num_modes <- length(modes)
 	cs <- 2
 	rs <- (1:num_modes)[-2]
-	fold(mat,row_idx=rs,col_idx=cs,modes=modes)	
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)
 }
 
 #'Row Space Folding of Matrix
@@ -370,7 +378,7 @@ cs_fold <- function(mat,m=NULL,modes=NULL){
 	num_modes <- length(modes)
 	cs <- m
 	rs <- (1:num_modes)[-m]
-	fold(mat,row_idx=rs,col_idx=cs,modes=modes)	
+	fold(mat,row_idx=rs,col_idx=cs,modes=modes)
 }
 
 #'ORL Database of Faces
@@ -400,9 +408,7 @@ plot_orl <- function(subject=1, condition=1){
 	if (subject%in%seq(1,40)==FALSE) stop("subject must be between 1 and 40")
 	if (condition%in%seq(1,10)==FALSE) stop("condition must be between 1 and 10")
 	greyscale = grey(seq(0,1,length=256))
-	faces_tnsr <- NULL
-	rm(faces_tnsr)
-	data(faces_tnsr, package='rTensor', envir=environment())
+	faces_tnsr <- load_orl()
 	image(faces_tnsr[,,subject,condition]@data,col=greyscale)
 }
 
@@ -493,14 +499,14 @@ plot_orl <- function(subject=1, condition=1){
 		# num_length <- tmp_tnsr@modes[1]
 		# if (is.null(index)) index <- sample(seq(1,num_length),1)
 		# if ((index%in%seq(1,num_length))==FALSE) stop(paste("index must not exceed ",num_length," for this digit",sep=""))
-		# image(tmp_tnsr[index,,]@data, col=greyscale) 
+		# image(tmp_tnsr[index,,]@data, col=greyscale)
 	# }else if(train_or_test=='test'){
 		# data(MNIST_test, package='rTensor', envir=environment())
 		# tmp_tnsr <- MNIST_test[[digit+1]]
 		# num_length <- tmp_tnsr@modes[1]
 		# if (is.null(index)) index <- sample(seq(1,num_length),1)
 		# if ((index%in%seq(1,num_length))==FALSE) stop(paste("index must not exceed ",num_length," for this digit",sep=""))
-		# image(tmp_tnsr[index,,]@data, col=greyscale) 
+		# image(tmp_tnsr[index,,]@data, col=greyscale)
 	# }else{
 		# stop("train_or_test must be 'train' or 'test'")
 	# }

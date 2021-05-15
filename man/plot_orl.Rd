@@ -12,17 +12,10 @@ plot_orl(subject = 1, condition = 1)
 \item{condition}{which lighting condition (1-10)}
 }
 \description{
-A wrapper function to image() to allow easy visualization of faces_tnsr, the ORL Face Dataset.
-}
-\examples{
-plot_orl(subject=5,condition=4)
-plot_orl(subject=2,condition=7)
+A wrapper function to image() to allow easy visualization of faces_tnsr, the ORL Face Dataset.  The data is now stored in figshare \url{https://ndownloader.figshare.com/files/28005669}
 }
 \references{
-AT&T Laboratories Cambridge. \url{http://www.cl.cam.ac.uk/research/dtg/attarchive/facedatabase.html}
+AT&T Laboratories Cambridge. \url{https://www.kaggle.com/kasikrit/att-database-of-faces}
 
 F. Samaria, A. Harter, "Parameterisation of a Stochastic Model for Human Face Identification". IEEE Workshop on Applications of Computer Vision 1994.
-}
-\seealso{
-\code{\link{faces_tnsr}}
 }
