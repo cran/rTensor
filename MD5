@@ -1,6 +1,7 @@
-223e799e86bcd87c9bfecbcdf4ad464a *DESCRIPTION
+73d32e07b6a19d7bf81868446120ea73 *DESCRIPTION
+9a64d8944a7fc32ec299cc2797a73b05 *LICENSE
 99f819f9beab18750a7d3f62ac385d72 *NAMESPACE
-2b7f2de886302fb1f298f7d38d8b51f3 *NEWS
+374a8e12030cb523a9f436a4de81e3e7 *NEWS
 ffc03255ba4e080d0047560b73cb61d2 *R/rTensor_Class.R
 9ed46acfb27da90137a399c82356da17 *R/rTensor_Decomp.R
 a8e4381e31e4ca0cbfe29f8aa6957dce *R/rTensor_Misc.R
@@ -22,10 +23,10 @@ b7a8978a6bdb1f9f8bb699afb7afdb88 *man/hosvd.Rd
 87565d0359ce86d54d086de668bd2252 *man/innerProd-methods.Rd
 f2c88ab780248f76a1b250c315146eb8 *man/k_fold.Rd
 5d7efe12a08f66f776575c0f5c22dd7a *man/k_unfold-methods.Rd
-35fae51da9107ff7121deef06d6b2534 *man/khatri_rao.Rd
+9bd845d84a1c760b102b16a7141c4d29 *man/khatri_rao.Rd
 7be5d7fe5b4c460e2f28b1452aa0a223 *man/khatri_rao_list.Rd
-84fde0abd731bcad562ee8194d222e7a *man/kronecker_list.Rd
-300b830d7ad4515c9ced6bf015f529fa *man/load_orl.Rd
+b2f3101fd37b0fa7a94aeb886a408f6e *man/kronecker_list.Rd
+441987304ee8d01906a45414ac3a9425 *man/load_orl.Rd
 37b7e029101e1f9adb5b4c8ff8d8a750 *man/matvec-methods.Rd
 75407f08ac6d25df9a46b34023d151e9 *man/modeMean-methods.Rd
 70ff1df70e18435cca83f49a6a0851a0 *man/modeSum-methods.Rd

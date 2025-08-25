@@ -1,9 +1,20 @@
 Package: rTensor
 Type: Package
 Title: Tools for Tensor Analysis and Decomposition
-Version: 1.4.8
-Author: James Li and Jacob Bien and Martin Wells
-Maintainer: Koki Tsuyuzaki <k.t.the-answer@hotmail.co.jp>
+Version: 1.4.9
+Authors@R: c(person(given = "James",
+                    family = "Li",
+                    role = "aut"),
+             person(given = "Jacob",
+                    family = "Bien",
+                    role = "aut"),
+             person(given = "Martin",
+                    family = "Wells",
+                    role = "aut"),
+             person(given = "Koki",
+                    family = "Tsuyuzaki",
+                    role = c("cre", "ctb"),
+                    email = "k.t.the-answer@hotmail.co.jp"))
 Description: A set of tools for creation, manipulation, and modeling
     of tensors with arbitrary number of modes. A tensor in the context of data
     analysis is a multidimensional array. rTensor does this by providing a S4
@@ -17,13 +28,18 @@ Description: A set of tools for creation, manipulation, and modeling
     transpose, t-product, and t-SVD, as defined in Kilmer et al. (2013). Some
     auxiliary functions include the Khatri-Rao product, Kronecker product, and
     the Hadamard product for a list of matrices.
-License: GPL (>= 2)
+License: MIT + file LICENSE
 Depends: R (>= 2.10.0)
 Imports: methods
-Date: 2021-05-14
+Date: 2025-08-25
 URL: https://github.com/rikenbit/rTensor
 RoxygenNote: 6.1.1
 NeedsCompilation: no
-Packaged: 2021-05-14 04:43:12 UTC; root
+Packaged: 2025-08-25 02:14:25 UTC; koki
+Author: James Li [aut],
+  Jacob Bien [aut],
+  Martin Wells [aut],
+  Koki Tsuyuzaki [cre, ctb]
+Maintainer: Koki Tsuyuzaki <k.t.the-answer@hotmail.co.jp>
 Repository: CRAN
-Date/Publication: 2021-05-15 06:20:10 UTC
+Date/Publication: 2025-08-25 05:00:02 UTC
